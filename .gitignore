@@ -1,0 +1,18 @@
+# Build directories
+cinemate/target/
+cinemate/.mvn/wrapper/maven-wrapper.jar
+
+# IDE specific files
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+
+# Local database volumes (if mapped locally in the future)
+postgres-data/
+*.log

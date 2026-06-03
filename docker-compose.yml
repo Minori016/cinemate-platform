@@ -1,0 +1,11 @@
+services:
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: postgres_cinemate
+    restart: no
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: cinemate_db
+    ports:
+      - "5432:5432"

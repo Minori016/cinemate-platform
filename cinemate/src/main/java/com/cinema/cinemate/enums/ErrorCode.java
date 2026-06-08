@@ -3,20 +3,39 @@ package com.cinema.cinemate.enums;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
+/**
+ * Tập trung quản lý tất cả mã lỗi của hệ thống.
+ * Mỗi ErrorCode gồm: code (số), message (hiển thị cho client), HTTP status.
+ *
+ * Quy ước đánh số:
+ *   - 9999       : Lỗi chưa phân loại
+ *   - 1001-1009  : Lỗi liên quan đến user/auth
+ *   - 1011-1019  : Lỗi validation input
+ */
 @Getter
 public enum ErrorCode {
+    // === Lỗi hệ thống ===
     UNCATEGORIZED_EXCEPTION(9999, "Uncategorized error", HttpStatus.INTERNAL_SERVER_ERROR),
     INVALID_KEY(1001, "Uncategorized error", HttpStatus.BAD_REQUEST),
+
+    // === Lỗi nghiệp vụ User ===
     USER_EXISTED(1002, "User existed", HttpStatus.BAD_REQUEST),
     USERNAME_INVALID(1003, "Username must be at least 3 characters", HttpStatus.BAD_REQUEST),
-    INVALID_PASSWORD(1004, "Password must be at least 8 characters", HttpStatus.BAD_REQUEST),
     USER_NOT_EXISTED(1005, "User not existed", HttpStatus.NOT_FOUND),
-    UNAUTHENTICATED(1006, "Unauthenticated", HttpStatus.UNAUTHORIZED),
+
+    // === Lỗi Authentication & Authorization ===
+    UNAUTHENTICATED(1006, "Email/password is invalid. Please try again!", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1007, "You do not have permission", HttpStatus.FORBIDDEN),
     INVALID_TOKEN(1008, "Token is invalid", HttpStatus.UNAUTHORIZED),
     TOKEN_EXPIRED(1009, "Token has expired", HttpStatus.UNAUTHORIZED),
-    INVALID_EMAIL(1011, "Invalid email address", HttpStatus.BAD_REQUEST),
+    ACCOUNT_LOCKED(1010, "Account has been locked!", HttpStatus.FORBIDDEN),
     TOKEN_CREATION_FAILED(1013, "Failed to create authentication token", HttpStatus.INTERNAL_SERVER_ERROR),
+
+    // === Lỗi Validation Input ===
+    INVALID_EMAIL(1011, "Invalid email address", HttpStatus.BAD_REQUEST),
+    INVALID_PASSWORD(1004, "Password must be at least 8 characters", HttpStatus.BAD_REQUEST),
+    WEAK_PASSWORD(1012, "Password must contain uppercase, lowercase, digit and special character", HttpStatus.BAD_REQUEST),
+    PASSWORD_MISMATCH(1014, "Password and Confirm Password do not match", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatus statusCode) {

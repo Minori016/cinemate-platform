@@ -36,6 +36,12 @@ public enum ErrorCode {
     INVALID_PASSWORD(1004, "Password must be at least 8 characters", HttpStatus.BAD_REQUEST),
     WEAK_PASSWORD(1012, "Password must contain uppercase, lowercase, digit and special character", HttpStatus.BAD_REQUEST),
     PASSWORD_MISMATCH(1014, "Password and Confirm Password do not match", HttpStatus.BAD_REQUEST),
+
+    // === Lỗi Forgot Password ===
+    RESET_TOKEN_INVALID(1015, "Reset token is invalid", HttpStatus.BAD_REQUEST),
+    RESET_TOKEN_EXPIRED(1016, "Reset token has expired", HttpStatus.BAD_REQUEST),
+    RESET_TOKEN_USED(1017, "Reset token has already been used", HttpStatus.BAD_REQUEST),
+    EMAIL_NOT_FOUND(1018, "Email address not found in the system", HttpStatus.NOT_FOUND),
     ;
 
     ErrorCode(int code, String message, HttpStatus statusCode) {

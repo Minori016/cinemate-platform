@@ -4,12 +4,16 @@ import com.cinema.cinemate.entity.User;
 import com.cinema.cinemate.request.IntrospectRequest;
 import com.cinema.cinemate.request.UserLoginRequest;
 import com.cinema.cinemate.request.UserRegisterRequest;
+import com.cinema.cinemate.request.ForgotPasswordRequest;
+import com.cinema.cinemate.request.ResetPasswordRequest;
 import com.cinema.cinemate.response.ApiResponse;
 import com.cinema.cinemate.response.AuthenticationResponse;
 import com.cinema.cinemate.response.IntrospectResponse;
 import com.cinema.cinemate.response.UserResponse;
+import com.cinema.cinemate.response.ForgotPasswordResponse;
 import com.cinema.cinemate.service.AuthenticationService;
 import com.cinema.cinemate.service.UserService;
+import com.cinema.cinemate.service.ForgotPasswordService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +30,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
     private final UserService userService;
     private final AuthenticationService authenticationService;
+    private final ForgotPasswordService forgotPasswordService;
 
     /**
      * API Đăng ký tài khoản mới (User Story 1).
@@ -98,6 +103,54 @@ public class AuthController {
         IntrospectResponse result = authenticationService.introspect(request);
         return ApiResponse.<IntrospectResponse>builder()
                 .result(result)
+                .build();
+    }
+
+    /**
+     * API gửi yêu cầu quên mật khẩu.
+     *
+     * POST /auth/forgot-password
+     *
+     * Luồng xử lý:
+     * 1. Tìm user theo email
+     * 2. Tạo JWT reset token (15 phút)
+     * 3. Lưu token vào DB
+     * 4. Gửi email cho user
+     *
+     * Lưu ý bảo mật: Luôn trả thành công dù email có tồn tại hay không.
+     *
+     * @param request DTO chứa email cần reset
+     * @return ApiResponse thông báo đã gửi email
+     */
+    @PostMapping("/forgot-password")
+    ApiResponse<ForgotPasswordResponse> forgotPassword(
+            @RequestBody @Valid ForgotPasswordRequest request) {
+        return ApiResponse.<ForgotPasswordResponse>builder()
+                .result(forgotPasswordService.requestReset(request))
+                .build();
+    }
+
+    /**
+     * API reset mật khẩu bằng token.
+     *
+     * POST /auth/reset-password
+     *
+     * Luồng xử lý:
+     * 1. Verify token (chữ ký + hết hạn)
+     * 2. Kiểm tra token chưa được sử dụng
+     * 3. Kiểm tra password khớp confirm password
+     * 4. Cập nhật password mới
+     * 5. Đánh dấu token đã sử dụng
+     *
+     * @param request DTO chứa token và password mới
+     * @return ApiResponse thông báo thành công
+     */
+    @PostMapping("/reset-password")
+    ApiResponse<Void> resetPassword(
+            @RequestBody @Valid ResetPasswordRequest request) {
+        forgotPasswordService.resetPassword(request);
+        return ApiResponse.<Void>builder()
+                .message("Password has been reset successfully.")
                 .build();
     }
 }

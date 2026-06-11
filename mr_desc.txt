@@ -1,0 +1,30 @@
+**Definition of Done** 
+*	[x] Feature works as expected and passes manual testing 
+*	[x] Code follows project conventions and is lint-free 
+*	[ ] Unit and integration tests are written and passing 
+*	[x] No sensitive data or hardcoded secrets 
+*	[ ] Feature is documented (README, API docs) 
+*	[x] CI/CD pipeline passes successfully 
+*	[ ] Code is reviewed and approved 
+--- 
+**Review Checklist** 
+*	[ ] PR is linked to a Jira/Trello task or issue 
+*	[x] PR title follows naming convention ([Feature], [Fix], [Refactor], etc.) 
+*	[x] Code is modular and follows SOLID principles 
+*	[x] Proper error handling and edge case coverage 
+*	[x] API responses are consistent and documented 
+*	[x] Git history is clean (no debug commits, proper messages) 
+*	[x] No unused code, commented-out blocks, or console logs 
+*	[x] Feature is integrated and does not break existing flows 
+--- 
+**Test Coverage** 
+*	Unit Tests: N/A 
+*	Manual Test Results: Passed locally with Maven compile. 
+--- 
+**Change Description** 
+*	Implement stateless OTP for Change Password.
+*	Refactor Password Reset to use Stateless JWT instead of DB.
+*	Fix Authorization bug in UserController for /users/email/{email}.
+--- 
+**Related Tasks / Issues** 
+*	Issues: User Story Change Password

@@ -46,6 +46,7 @@ public enum ErrorCode {
     // === Lỗi Change Password ===
     INVALID_OTP(1019, "OTP is invalid or has expired", HttpStatus.BAD_REQUEST),
     WRONG_PASSWORD(1020, "Current password is incorrect", HttpStatus.BAD_REQUEST),
+    NEW_PASSWORD_SAME_AS_CURRENT(1021, "New password cannot be the same as the current password", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatus statusCode) {

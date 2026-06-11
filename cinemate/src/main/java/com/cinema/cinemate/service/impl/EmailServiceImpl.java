@@ -42,4 +42,28 @@ public class EmailServiceImpl implements EmailService {
                 If you did not request this, please ignore this email.
                 """.formatted(resetToken);
     }
+
+    @Override
+    public void sendOtpEmail(String toEmail, String otp) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(toEmail);
+        message.setSubject("Cinemate - Password Change OTP");
+        
+        String body = """
+                Hello,
+
+                You requested to change your password for your Cinemate account.
+
+                Your OTP is: %s
+
+                This OTP is valid for 10 minutes.
+
+                If you did not request this, please ignore this email.
+                """.formatted(otp);
+                
+        message.setText(body);
+
+        mailSender.send(message);
+        log.info("Password change OTP email sent to: {}", toEmail);
+    }
 }

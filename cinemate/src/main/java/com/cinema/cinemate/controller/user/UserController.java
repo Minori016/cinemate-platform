@@ -1,8 +1,11 @@
 package com.cinema.cinemate.controller.user;
 
+import com.cinema.cinemate.request.ChangePasswordRequest;
+import com.cinema.cinemate.response.ChangePasswordOtpResponse;
 import com.cinema.cinemate.response.ApiResponse;
 import com.cinema.cinemate.response.UserResponse;
 import com.cinema.cinemate.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -26,6 +29,24 @@ public class UserController {
         UUID userId = UUID.fromString(userIdStr);
         return ApiResponse.<UserResponse>builder()
                 .result(userService.getUserById(userId))
+                .build();
+    }
+
+    @PostMapping("/myinfo/change-password/request-otp")
+    public ApiResponse<ChangePasswordOtpResponse> requestChangePasswordOtp(@AuthenticationPrincipal Jwt jwt) {
+        String email = jwt.getSubject();
+        return ApiResponse.<ChangePasswordOtpResponse>builder()
+                .result(userService.requestChangePasswordOtp(email))
+                .build();
+    }
+
+    @PostMapping("/myinfo/change-password")
+    public ApiResponse<Void> changePassword(@AuthenticationPrincipal Jwt jwt,
+                                            @RequestBody @Valid ChangePasswordRequest request) {
+        String email = jwt.getSubject();
+        userService.changePassword(email, request);
+        return ApiResponse.<Void>builder()
+                .message("Password has been changed successfully.")
                 .build();
     }
 

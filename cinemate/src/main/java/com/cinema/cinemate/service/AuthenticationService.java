@@ -48,6 +48,10 @@ public class AuthenticationService {
     @Value("${jwt.reset-token-expiration:900}")
     protected long RESET_TOKEN_EXPIRATION;
 
+    @NonFinal
+    @Value("${jwt.otp-token-expiration:600}")
+    protected long OTP_TOKEN_EXPIRATION;
+
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
@@ -183,6 +187,60 @@ public class AuthenticationService {
             throw new AppException(ErrorCode.RESET_TOKEN_INVALID);
         } catch (JOSEException e) {
             throw new AppException(ErrorCode.RESET_TOKEN_INVALID);
+        }
+    }
+
+    public String generateChangePasswordOtpToken(User user, String otp) {
+        JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
+        String encodedOtp = passwordEncoder.encode(otp);
+
+        JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
+                .subject(user.getEmail())
+                .issuer("cinemate")
+                .issueTime(new Date())
+                .expirationTime(new Date(
+                        Instant.now().plus(OTP_TOKEN_EXPIRATION, ChronoUnit.SECONDS).toEpochMilli()))
+                .claim("userId", user.getUuid().toString())
+                .claim("type", "CHANGE_PASSWORD_OTP")
+                .claim("encodedOtp", encodedOtp)
+                .build();
+
+        Payload payload = new Payload(jwtClaimsSet.toJSONObject());
+        JWSObject jwsObject = new JWSObject(header, payload);
+
+        try {
+            String secret = SIGNER_KEY + user.getPassword();
+            jwsObject.sign(new MACSigner(secret.getBytes()));
+            return jwsObject.serialize();
+        } catch (JOSEException e) {
+            throw new AppException(ErrorCode.TOKEN_CREATION_FAILED);
+        }
+    }
+
+    public void verifyChangePasswordOtpToken(String token, User user, String otp) {
+        try {
+            SignedJWT signedJWT = SignedJWT.parse(token);
+
+            String secret = SIGNER_KEY + user.getPassword();
+            JWSVerifier verifier = new MACVerifier(secret.getBytes());
+            boolean verified = signedJWT.verify(verifier);
+
+            if (!verified) {
+                throw new AppException(ErrorCode.INVALID_TOKEN);
+            }
+
+            Date expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+            if (expirationTime.before(new Date())) {
+                throw new AppException(ErrorCode.TOKEN_EXPIRED);
+            }
+
+            String encodedOtp = signedJWT.getJWTClaimsSet().getStringClaim("encodedOtp");
+            if (!passwordEncoder.matches(otp, encodedOtp)) {
+                throw new AppException(ErrorCode.INVALID_TOKEN);
+            }
+
+        } catch (ParseException | JOSEException e) {
+            throw new AppException(ErrorCode.INVALID_TOKEN);
         }
     }
 

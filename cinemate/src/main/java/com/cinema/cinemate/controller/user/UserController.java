@@ -2,7 +2,6 @@ package com.cinema.cinemate.controller.user;
 
 import com.cinema.cinemate.request.ChangePasswordRequest;
 import com.cinema.cinemate.request.ProfileUpdateRequest;
-import com.cinema.cinemate.response.ChangePasswordOtpResponse;
 import com.cinema.cinemate.response.ApiResponse;
 import com.cinema.cinemate.response.UserResponse;
 import com.cinema.cinemate.service.UserService;

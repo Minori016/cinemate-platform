@@ -17,7 +17,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.cinema.cinemate.request.ChangePasswordRequest;
 import com.cinema.cinemate.request.ProfileUpdateRequest;
-import com.cinema.cinemate.response.ChangePasswordOtpResponse;
 import com.cinema.cinemate.service.AuthenticationService;
 import com.cinema.cinemate.service.EmailService;
 import java.security.SecureRandom;

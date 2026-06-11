@@ -4,6 +4,7 @@ import com.cinema.cinemate.response.ApiResponse;
 import com.cinema.cinemate.response.UserResponse;
 import com.cinema.cinemate.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +31,7 @@ public class UserController {
 
     // ============ ADMIN ONLY ENDPOINTS ============
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ApiResponse<List<UserResponse>> getAllUsers() {
         return ApiResponse.<List<UserResponse>>builder()
@@ -37,6 +39,7 @@ public class UserController {
                 .build();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{userId}")
     public ApiResponse<UserResponse> getUser(@PathVariable UUID userId) {
         return ApiResponse.<UserResponse>builder()
@@ -44,6 +47,7 @@ public class UserController {
                 .build();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/email/{email}")
     public ApiResponse<UserResponse> getUserByEmail(@PathVariable String email) {
         return ApiResponse.<UserResponse>builder()
@@ -51,6 +55,7 @@ public class UserController {
                 .build();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{userId}")
     public ApiResponse<String> deleteUser(@PathVariable UUID userId) {
         userService.deleteUser(userId);

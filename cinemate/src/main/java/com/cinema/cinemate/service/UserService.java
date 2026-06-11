@@ -71,6 +71,11 @@ public class UserService {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
 
+        // Kiểm tra username đã tồn tại chưa
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new AppException(ErrorCode.USERNAME_EXISTED);
+        }
+
         // Lấy role MEMBER mặc định (tạo mới nếu chưa có)
         Role memberRole = roleRepository.findByName("MEMBER")
                 .orElseGet(() -> roleRepository.save(
@@ -88,9 +93,7 @@ public class UserService {
         user.setUsername(request.getUsername().trim());
         user.setDayOfBirth(request.getDayOfBirth());
         user.setGender(request.getGender().trim());
-        user.setIdentityCard(request.getIdentityCard().trim());
         user.setPhoneNumber(request.getPhoneNumber().trim());
-        user.setAddress(request.getAddress().trim());
         user.setScore(0);
         user.setStatus("ACTIVE");
 

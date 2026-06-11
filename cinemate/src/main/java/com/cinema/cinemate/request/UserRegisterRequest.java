@@ -54,15 +54,7 @@ public class UserRegisterRequest {
     @NotBlank(message = "INVALID_KEY")
     private String gender;
 
-    /** Số CMND / CCCD */
-    @NotBlank(message = "INVALID_KEY")
-    private String identityCard;
-
     /** Số điện thoại */
     @NotBlank(message = "INVALID_KEY")
     private String phoneNumber;
-
-    /** Địa chỉ */
-    @NotBlank(message = "INVALID_KEY")
-    private String address;
 }

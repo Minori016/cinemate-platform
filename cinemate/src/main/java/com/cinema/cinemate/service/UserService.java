@@ -18,12 +18,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.cinema.cinemate.request.ChangePasswordRequest;
 import com.cinema.cinemate.request.ProfileUpdateRequest;
 import com.cinema.cinemate.service.AuthenticationService;
+import com.cinema.cinemate.service.CloudinaryService;
 import com.cinema.cinemate.service.EmailService;
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Service xử lý nghiệp vụ liên quan đến User:
@@ -40,6 +43,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final AuthenticationService authenticationService;
+    private final CloudinaryService cloudinaryService;
 
     // ========================
     // REGISTRATION (User Story 1)
@@ -266,6 +270,50 @@ public class UserService {
                 memberId != null ? memberId.toString() : "null",
                 status,
                 java.time.LocalDateTime.now());
+    }
+
+    /**
+     * Upload Avatar for User
+     */
+    public UserResponse uploadAvatar(UUID targetUserId, MultipartFile file, UUID actorId, Set<String> actorRoles) {
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> {
+                    logEditEvent(actorId, actorRoles, targetUserId, java.util.Collections.emptySet(), "FAILED");
+                    return new AppException(ErrorCode.USER_NOT_EXISTED);
+                });
+
+        // Tương tự Edit Profile, chỉ chủ tài khoản hoặc Admin/Staff mới được đổi avatar
+        if (!actorId.equals(targetUserId) && !actorRoles.contains("ADMIN") && !actorRoles.contains("STAFF")) {
+            Set<String> targetRoles = targetUser.getUserRoles().stream()
+                    .map(ur -> ur.getRole().getName())
+                    .collect(Collectors.toSet());
+            logEditEvent(actorId, actorRoles, targetUserId, targetRoles, "FAILED");
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        try {
+            // Upload to Cloudinary
+            String imageUrl = cloudinaryService.uploadFile(file);
+
+            // Update user image
+            targetUser.setImage(imageUrl);
+            User savedUser = userRepository.save(targetUser);
+
+            Set<String> targetRoles = savedUser.getUserRoles().stream()
+                    .map(ur -> ur.getRole().getName())
+                    .collect(Collectors.toSet());
+
+            logEditEvent(actorId, actorRoles, targetUserId, targetRoles, "SUCCESS");
+
+            return toUserResponse(savedUser);
+
+        } catch (IOException e) {
+            Set<String> targetRoles = targetUser.getUserRoles().stream()
+                    .map(ur -> ur.getRole().getName())
+                    .collect(Collectors.toSet());
+            logEditEvent(actorId, actorRoles, targetUserId, targetRoles, "FAILED");
+            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION); // Could add a specific FILE_UPLOAD_FAILED code
+        }
     }
 
     // ========================

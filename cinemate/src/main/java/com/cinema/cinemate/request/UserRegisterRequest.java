@@ -27,13 +27,13 @@ public class UserRegisterRequest {
     @Email(message = "INVALID_EMAIL")
     private String email;
 
-    /** Mật khẩu — tối thiểu 8 ký tự, phải chứa chữ hoa, chữ thường, số và ký tự đặc biệt */
+    /**
+     * Mật khẩu — tối thiểu 8 ký tự, phải chứa chữ hoa, chữ thường, số và ký tự đặc
+     * biệt
+     */
     @NotBlank(message = "INVALID_PASSWORD")
     @Size(min = 8, message = "INVALID_PASSWORD")
-    @Pattern(
-            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
-            message = "WEAK_PASSWORD"
-    )
+    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$", message = "WEAK_PASSWORD")
     private String password;
 
     /** Xác nhận mật khẩu — phải trùng khớp với password (AC-03) */

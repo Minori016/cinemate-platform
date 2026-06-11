@@ -155,39 +155,11 @@ public class UserService {
     // ========================
 
     /**
-     * Yêu cầu gửi OTP để đổi mật khẩu.
-     * Tạo mã OTP ngẫu nhiên, mã hoá vào JWT token và gửi OTP qua email.
-     */
-    public ChangePasswordOtpResponse requestChangePasswordOtp(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
-        // Generate 6 digit OTP
-        SecureRandom random = new SecureRandom();
-        int otpValue = 100000 + random.nextInt(900000);
-        String otp = String.valueOf(otpValue);
-
-        // Send Email
-        emailService.sendOtpEmail(user.getEmail(), otp);
-
-        // Generate Stateless OTP Token
-        String otpToken = authenticationService.generateChangePasswordOtpToken(user, otp);
-
-        return ChangePasswordOtpResponse.builder()
-                .otpToken(otpToken)
-                .message("OTP has been sent to your email. It will expire in 10 minutes.")
-                .build();
-    }
-
-    /**
      * Đổi mật khẩu.
      */
     public void changePassword(String email, ChangePasswordRequest request) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
-        // Verify OTP and token
-        authenticationService.verifyChangePasswordOtpToken(request.getOtpToken(), user, request.getOtp());
 
         // Verify current password
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
@@ -197,6 +169,11 @@ public class UserService {
         // Verify new password and confirm password match
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new AppException(ErrorCode.PASSWORD_MISMATCH);
+        }
+
+        // Prevent setting the new password same as the current password
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new AppException(ErrorCode.NEW_PASSWORD_SAME_AS_CURRENT);
         }
 
         // Change password

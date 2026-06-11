@@ -33,14 +33,6 @@ public class UserController {
                 .build();
     }
 
-    @PostMapping("/myinfo/change-password/request-otp")
-    public ApiResponse<ChangePasswordOtpResponse> requestChangePasswordOtp(@AuthenticationPrincipal Jwt jwt) {
-        String email = jwt.getSubject();
-        return ApiResponse.<ChangePasswordOtpResponse>builder()
-                .result(userService.requestChangePasswordOtp(email))
-                .build();
-    }
-
     @PostMapping("/myinfo/change-password")
     public ApiResponse<Void> changePassword(@AuthenticationPrincipal Jwt jwt,
                                             @RequestBody @Valid ChangePasswordRequest request) {

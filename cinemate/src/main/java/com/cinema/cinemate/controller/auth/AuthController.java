@@ -13,7 +13,6 @@ import com.cinema.cinemate.response.UserResponse;
 import com.cinema.cinemate.response.ForgotPasswordResponse;
 import com.cinema.cinemate.service.AuthenticationService;
 import com.cinema.cinemate.service.UserService;
-import com.cinema.cinemate.service.ForgotPasswordService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -30,7 +29,6 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
     private final UserService userService;
     private final AuthenticationService authenticationService;
-    private final ForgotPasswordService forgotPasswordService;
 
     /**
      * API Đăng ký tài khoản mới (User Story 1).
@@ -113,9 +111,8 @@ public class AuthController {
      *
      * Luồng xử lý:
      * 1. Tìm user theo email
-     * 2. Tạo JWT reset token (15 phút)
-     * 3. Lưu token vào DB
-     * 4. Gửi email cho user
+     * 2. Tạo JWT reset token với thời hạn 15 phút (sử dụng mật khẩu hiện tại làm chữ ký động)
+     * 3. Gửi email cho user
      *
      * Lưu ý bảo mật: Luôn trả thành công dù email có tồn tại hay không.
      *
@@ -126,7 +123,7 @@ public class AuthController {
     ApiResponse<ForgotPasswordResponse> forgotPassword(
             @RequestBody @Valid ForgotPasswordRequest request) {
         return ApiResponse.<ForgotPasswordResponse>builder()
-                .result(forgotPasswordService.requestReset(request))
+                .result(authenticationService.requestReset(request))
                 .build();
     }
 
@@ -136,11 +133,9 @@ public class AuthController {
      * POST /auth/reset-password
      *
      * Luồng xử lý:
-     * 1. Verify token (chữ ký + hết hạn)
-     * 2. Kiểm tra token chưa được sử dụng
-     * 3. Kiểm tra password khớp confirm password
-     * 4. Cập nhật password mới
-     * 5. Đánh dấu token đã sử dụng
+     * 1. Verify token (chữ ký tự động xác minh mật khẩu cũ không đổi, kiểm tra hết hạn)
+     * 2. Kiểm tra password khớp confirm password
+     * 3. Cập nhật password mới (thao tác này tự động vô hiệu hóa token cũ do chữ ký thay đổi)
      *
      * @param request DTO chứa token và password mới
      * @return ApiResponse thông báo thành công
@@ -148,7 +143,7 @@ public class AuthController {
     @PostMapping("/reset-password")
     ApiResponse<Void> resetPassword(
             @RequestBody @Valid ResetPasswordRequest request) {
-        forgotPasswordService.resetPassword(request);
+        authenticationService.resetPassword(request);
         return ApiResponse.<Void>builder()
                 .message("Password has been reset successfully.")
                 .build();

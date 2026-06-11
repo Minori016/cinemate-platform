@@ -1,9 +1,13 @@
 package com.cinema.cinemate.controller.user;
 
+import com.cinema.cinemate.request.ChangePasswordRequest;
+import com.cinema.cinemate.response.ChangePasswordOtpResponse;
 import com.cinema.cinemate.response.ApiResponse;
 import com.cinema.cinemate.response.UserResponse;
 import com.cinema.cinemate.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -28,8 +32,27 @@ public class UserController {
                 .build();
     }
 
+    @PostMapping("/myinfo/change-password/request-otp")
+    public ApiResponse<ChangePasswordOtpResponse> requestChangePasswordOtp(@AuthenticationPrincipal Jwt jwt) {
+        String email = jwt.getSubject();
+        return ApiResponse.<ChangePasswordOtpResponse>builder()
+                .result(userService.requestChangePasswordOtp(email))
+                .build();
+    }
+
+    @PostMapping("/myinfo/change-password")
+    public ApiResponse<Void> changePassword(@AuthenticationPrincipal Jwt jwt,
+                                            @RequestBody @Valid ChangePasswordRequest request) {
+        String email = jwt.getSubject();
+        userService.changePassword(email, request);
+        return ApiResponse.<Void>builder()
+                .message("Password has been changed successfully.")
+                .build();
+    }
+
     // ============ ADMIN ONLY ENDPOINTS ============
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ApiResponse<List<UserResponse>> getAllUsers() {
         return ApiResponse.<List<UserResponse>>builder()
@@ -37,6 +60,7 @@ public class UserController {
                 .build();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{userId}")
     public ApiResponse<UserResponse> getUser(@PathVariable UUID userId) {
         return ApiResponse.<UserResponse>builder()
@@ -44,6 +68,7 @@ public class UserController {
                 .build();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/email/{email}")
     public ApiResponse<UserResponse> getUserByEmail(@PathVariable String email) {
         return ApiResponse.<UserResponse>builder()
@@ -51,6 +76,7 @@ public class UserController {
                 .build();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{userId}")
     public ApiResponse<String> deleteUser(@PathVariable UUID userId) {
         userService.deleteUser(userId);

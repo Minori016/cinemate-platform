@@ -23,8 +23,17 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.cinema.cinemate.request.ForgotPasswordRequest;
+import com.cinema.cinemate.request.ResetPasswordRequest;
+import com.cinema.cinemate.response.ForgotPasswordResponse;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthenticationService {
 
     @NonFinal
@@ -39,7 +48,13 @@ public class AuthenticationService {
     @Value("${jwt.reset-token-expiration:900}")
     protected long RESET_TOKEN_EXPIRATION;
 
+    @NonFinal
+    @Value("${jwt.otp-token-expiration:600}")
+    protected long OTP_TOKEN_EXPIRATION;
+
     private final UserRepository userRepository;
+    private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * Generate JWT token for authenticated user
@@ -113,6 +128,7 @@ public class AuthenticationService {
     /**
      * Tạo JWT token dùng để reset password.
      * Token có thời hạn ngắn (mặc định 15 phút).
+     * Sử dụng SIGNER_KEY + password hash để ký nhằm hỗ trợ Stateless Token.
      */
     public String generatePasswordResetToken(User user) {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
@@ -131,7 +147,8 @@ public class AuthenticationService {
         JWSObject jwsObject = new JWSObject(header, payload);
 
         try {
-            jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
+            String secret = SIGNER_KEY + user.getPassword();
+            jwsObject.sign(new MACSigner(secret.getBytes()));
             return jwsObject.serialize();
         } catch (JOSEException e) {
             throw new AppException(ErrorCode.TOKEN_CREATION_FAILED);
@@ -140,13 +157,20 @@ public class AuthenticationService {
 
     /**
      * Verify password reset token.
-     * Kiểm tra chữ ký, thời hạn, và trả về User sở hữu token.
+     * Kiểm tra chữ ký bằng SIGNER_KEY + password hiện tại của User, thời hạn, và trả về User.
      */
     public User verifyPasswordResetToken(String token) {
         try {
             SignedJWT signedJWT = SignedJWT.parse(token);
 
-            JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
+            // Extract email from payload BEFORE verifying the signature
+            String email = signedJWT.getJWTClaimsSet().getSubject();
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_FOUND));
+
+            // Verify with dynamic secret
+            String secret = SIGNER_KEY + user.getPassword();
+            JWSVerifier verifier = new MACVerifier(secret.getBytes());
             boolean verified = signedJWT.verify(verifier);
 
             if (!verified) {
@@ -158,13 +182,98 @@ public class AuthenticationService {
                 throw new AppException(ErrorCode.RESET_TOKEN_EXPIRED);
             }
 
-            String email = signedJWT.getJWTClaimsSet().getSubject();
-            return userRepository.findByEmail(email)
-                    .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_FOUND));
+            return user;
         } catch (ParseException e) {
             throw new AppException(ErrorCode.RESET_TOKEN_INVALID);
         } catch (JOSEException e) {
             throw new AppException(ErrorCode.RESET_TOKEN_INVALID);
         }
+    }
+
+    public String generateChangePasswordOtpToken(User user, String otp) {
+        JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
+        String encodedOtp = passwordEncoder.encode(otp);
+
+        JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
+                .subject(user.getEmail())
+                .issuer("cinemate")
+                .issueTime(new Date())
+                .expirationTime(new Date(
+                        Instant.now().plus(OTP_TOKEN_EXPIRATION, ChronoUnit.SECONDS).toEpochMilli()))
+                .claim("userId", user.getUuid().toString())
+                .claim("type", "CHANGE_PASSWORD_OTP")
+                .claim("encodedOtp", encodedOtp)
+                .build();
+
+        Payload payload = new Payload(jwtClaimsSet.toJSONObject());
+        JWSObject jwsObject = new JWSObject(header, payload);
+
+        try {
+            String secret = SIGNER_KEY + user.getPassword();
+            jwsObject.sign(new MACSigner(secret.getBytes()));
+            return jwsObject.serialize();
+        } catch (JOSEException e) {
+            throw new AppException(ErrorCode.TOKEN_CREATION_FAILED);
+        }
+    }
+
+    public void verifyChangePasswordOtpToken(String token, User user, String otp) {
+        try {
+            SignedJWT signedJWT = SignedJWT.parse(token);
+
+            String secret = SIGNER_KEY + user.getPassword();
+            JWSVerifier verifier = new MACVerifier(secret.getBytes());
+            boolean verified = signedJWT.verify(verifier);
+
+            if (!verified) {
+                throw new AppException(ErrorCode.INVALID_TOKEN);
+            }
+
+            Date expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+            if (expirationTime.before(new Date())) {
+                throw new AppException(ErrorCode.TOKEN_EXPIRED);
+            }
+
+            String encodedOtp = signedJWT.getJWTClaimsSet().getStringClaim("encodedOtp");
+            if (!passwordEncoder.matches(otp, encodedOtp)) {
+                throw new AppException(ErrorCode.INVALID_TOKEN);
+            }
+
+        } catch (ParseException | JOSEException e) {
+            throw new AppException(ErrorCode.INVALID_TOKEN);
+        }
+    }
+
+    @Transactional
+    public ForgotPasswordResponse requestReset(ForgotPasswordRequest request) {
+        String email = request.getEmail().trim();
+
+        userRepository.findByEmail(email).ifPresent(user -> {
+            String resetToken = generatePasswordResetToken(user);
+            emailService.sendPasswordResetEmail(email, resetToken);
+
+            log.info("PASSWORD_RESET_REQUEST | email={} | timestamp={}",
+                    email, LocalDateTime.now());
+        });
+
+        return ForgotPasswordResponse.builder()
+                .message("If the email exists, a reset link has been sent.")
+                .sent(true)
+                .build();
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new AppException(ErrorCode.PASSWORD_MISMATCH);
+        }
+
+        User user = verifyPasswordResetToken(request.getToken());
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        log.info("PASSWORD_RESET_COMPLETED | email={} | timestamp={}",
+                user.getEmail(), LocalDateTime.now());
     }
 }

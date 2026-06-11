@@ -42,6 +42,10 @@ public enum ErrorCode {
     RESET_TOKEN_EXPIRED(1016, "Reset token has expired", HttpStatus.BAD_REQUEST),
     RESET_TOKEN_USED(1017, "Reset token has already been used", HttpStatus.BAD_REQUEST),
     EMAIL_NOT_FOUND(1018, "Email address not found in the system", HttpStatus.NOT_FOUND),
+
+    // === Lỗi Change Password ===
+    INVALID_OTP(1019, "OTP is invalid or has expired", HttpStatus.BAD_REQUEST),
+    WRONG_PASSWORD(1020, "Current password is incorrect", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatus statusCode) {

@@ -1,6 +1,7 @@
 package com.cinema.cinemate.controller.user;
 
 import com.cinema.cinemate.request.ChangePasswordRequest;
+import com.cinema.cinemate.request.ProfileUpdateRequest;
 import com.cinema.cinemate.response.ChangePasswordOtpResponse;
 import com.cinema.cinemate.response.ApiResponse;
 import com.cinema.cinemate.response.UserResponse;
@@ -50,6 +51,21 @@ public class UserController {
                 .build();
     }
 
+    @PutMapping("/myinfo")
+    public ApiResponse<UserResponse> updateMyProfile(@AuthenticationPrincipal Jwt jwt,
+                                                     @RequestBody @Valid ProfileUpdateRequest request) {
+        String userIdStr = jwt.getClaim("userId");
+        UUID userId = UUID.fromString(userIdStr);
+        List<String> rolesList = jwt.getClaim("roles");
+        java.util.Set<String> roles = rolesList != null ? new java.util.HashSet<>(rolesList) : java.util.Collections.emptySet();
+
+        UserResponse updatedUser = userService.updateProfile(userId, request, userId, roles);
+        return ApiResponse.<UserResponse>builder()
+                .message("Update information successfully")
+                .result(updatedUser)
+                .build();
+    }
+
     // ============ ADMIN ONLY ENDPOINTS ============
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -73,6 +89,23 @@ public class UserController {
     public ApiResponse<UserResponse> getUserByEmail(@PathVariable String email) {
         return ApiResponse.<UserResponse>builder()
                 .result(userService.getUserByEmail(email))
+                .build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{userId}")
+    public ApiResponse<UserResponse> updateProfileByAdmin(@AuthenticationPrincipal Jwt jwt,
+                                                          @PathVariable UUID userId,
+                                                          @RequestBody @Valid ProfileUpdateRequest request) {
+        String adminIdStr = jwt.getClaim("userId");
+        UUID adminId = UUID.fromString(adminIdStr);
+        List<String> rolesList = jwt.getClaim("roles");
+        java.util.Set<String> roles = rolesList != null ? new java.util.HashSet<>(rolesList) : java.util.Collections.emptySet();
+
+        UserResponse updatedUser = userService.updateProfile(userId, request, adminId, roles);
+        return ApiResponse.<UserResponse>builder()
+                .message("Update information successfully")
+                .result(updatedUser)
                 .build();
     }
 

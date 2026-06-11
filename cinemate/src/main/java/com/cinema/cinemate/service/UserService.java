@@ -16,6 +16,7 @@ import com.cinema.cinemate.exception.AppException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.cinema.cinemate.request.ChangePasswordRequest;
+import com.cinema.cinemate.request.ProfileUpdateRequest;
 import com.cinema.cinemate.response.ChangePasswordOtpResponse;
 import com.cinema.cinemate.service.AuthenticationService;
 import com.cinema.cinemate.service.EmailService;
@@ -203,6 +204,89 @@ public class UserService {
         userRepository.save(user);
 
         log.info("CHANGE_PASSWORD | email={} | timestamp={}", user.getEmail(), java.time.LocalDateTime.now());
+    }
+
+    /**
+     * Cập nhật thông tin cá nhân của User (Edit Profile).
+     */
+    public UserResponse updateProfile(UUID targetUserId, ProfileUpdateRequest request, UUID actorId, Set<String> actorRoles) {
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> {
+                    logEditEvent(actorId, actorRoles, targetUserId, java.util.Collections.emptySet(), "FAILED");
+                    return new AppException(ErrorCode.USER_NOT_EXISTED);
+                });
+
+        // Kiểm tra quyền: Chỉ chính chủ hoặc ADMIN/STAFF mới được quyền sửa
+        if (!actorId.equals(targetUserId) && !actorRoles.contains("ADMIN") && !actorRoles.contains("STAFF")) {
+            Set<String> targetRoles = targetUser.getUserRoles().stream()
+                    .map(ur -> ur.getRole().getName())
+                    .collect(Collectors.toSet());
+            logEditEvent(actorId, actorRoles, targetUserId, targetRoles, "FAILED");
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        try {
+            // Kiểm tra email duy nhất (nếu thay đổi email)
+            if (!targetUser.getEmail().equalsIgnoreCase(request.getEmail().trim())) {
+                if (userRepository.existsByEmail(request.getEmail().trim())) {
+                    throw new AppException(ErrorCode.USER_EXISTED);
+                }
+            }
+
+            // Kiểm tra username duy nhất (nếu thay đổi username)
+            if (targetUser.getUsername() == null || !targetUser.getUsername().equalsIgnoreCase(request.getUsername().trim())) {
+                if (userRepository.existsByUsername(request.getUsername().trim())) {
+                    throw new AppException(ErrorCode.USER_EXISTED);
+                }
+            }
+
+            // Cập nhật thông tin
+            targetUser.setUsername(request.getUsername().trim());
+            targetUser.setEmail(request.getEmail().trim());
+            targetUser.setPassword(passwordEncoder.encode(request.getPassword()));
+            targetUser.setFullName(request.getFullName().trim());
+            targetUser.setDayOfBirth(request.getDayOfBirth());
+            targetUser.setGender(request.getGender().trim());
+            targetUser.setIdentityCard(request.getIdentityCard().trim());
+            targetUser.setPhoneNumber(request.getPhoneNumber().trim());
+            targetUser.setAddress(request.getAddress().trim());
+
+            User savedUser = userRepository.save(targetUser);
+
+            Set<String> targetRoles = savedUser.getUserRoles().stream()
+                    .map(ur -> ur.getRole().getName())
+                    .collect(Collectors.toSet());
+
+            logEditEvent(actorId, actorRoles, targetUserId, targetRoles, "SUCCESS");
+
+            return toUserResponse(savedUser);
+
+        } catch (Exception e) {
+            Set<String> targetRoles = targetUser.getUserRoles().stream()
+                    .map(ur -> ur.getRole().getName())
+                    .collect(Collectors.toSet());
+            logEditEvent(actorId, actorRoles, targetUserId, targetRoles, "FAILED");
+            throw e;
+        }
+    }
+
+    private void logEditEvent(UUID actorId, Set<String> actorRoles, UUID targetId, Set<String> targetRoles, String status) {
+        UUID employeeId = null;
+        UUID memberId = null;
+
+        if (actorRoles.contains("ADMIN") || actorRoles.contains("STAFF")) {
+            employeeId = actorId;
+        }
+
+        if (targetRoles.contains("MEMBER")) {
+            memberId = targetId;
+        }
+
+        log.info("PROFILE_EDIT_EVENT | employeeId={} | memberId={} | status={} | timestamp={}",
+                employeeId != null ? employeeId.toString() : "null",
+                memberId != null ? memberId.toString() : "null",
+                status,
+                java.time.LocalDateTime.now());
     }
 
     // ========================

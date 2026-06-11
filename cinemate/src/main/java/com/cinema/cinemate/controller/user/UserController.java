@@ -11,6 +11,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
 
 import java.util.List;
 import java.util.UUID;
@@ -53,6 +55,21 @@ public class UserController {
         UserResponse updatedUser = userService.updateProfile(userId, request, userId, roles);
         return ApiResponse.<UserResponse>builder()
                 .message("Update information successfully")
+                .result(updatedUser)
+                .build();
+    }
+
+    @PostMapping(value = "/myinfo/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<UserResponse> uploadAvatar(@AuthenticationPrincipal Jwt jwt,
+                                                  @RequestParam("file") MultipartFile file) {
+        String userIdStr = jwt.getClaim("userId");
+        UUID userId = UUID.fromString(userIdStr);
+        List<String> rolesList = jwt.getClaim("roles");
+        java.util.Set<String> roles = rolesList != null ? new java.util.HashSet<>(rolesList) : java.util.Collections.emptySet();
+
+        UserResponse updatedUser = userService.uploadAvatar(userId, file, userId, roles);
+        return ApiResponse.<UserResponse>builder()
+                .message("Avatar uploaded successfully")
                 .result(updatedUser)
                 .build();
     }

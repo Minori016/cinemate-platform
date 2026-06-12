@@ -9,3 +9,17 @@ services:
       POSTGRES_DB: cinemate_db
     ports:
       - "5432:5432"
+
+  backend:
+    build:
+      context: ./cinemate
+      dockerfile: Dockerfile
+    container_name: backend_cinemate
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres-db
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/cinemate_db
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=123456

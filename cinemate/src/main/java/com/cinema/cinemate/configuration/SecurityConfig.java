@@ -42,6 +42,7 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(request -> request
                                                 // Public endpoints
                                                 .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/v1/movies", "/api/v1/movies/**").permitAll()
 
                                                 // Swagger / OpenAPI
                                                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**",

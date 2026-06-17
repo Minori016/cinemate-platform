@@ -23,7 +23,7 @@ public class SecurityConfig {
         private final JwtAuthenticationConverter jwtAuthenticationConverter;
 
         private final String[] PUBLIC_ENDPOINTS = {
-                        "/auth/**"
+                        "/api/v1/auth/**"
         };
 
         public SecurityConfig(CorsConfigurationSource corsConfigurationSource,
@@ -49,15 +49,15 @@ public class SecurityConfig {
                                                 .permitAll()
 
                                                 // Authenticated user self info
-                                                .requestMatchers("/users/myinfo", "/users/myinfo/**").authenticated()
+                                                .requestMatchers("/api/v1/users/myinfo", "/api/v1/users/myinfo/**").authenticated()
 
                                                 // Admin only endpoints
-                                                .requestMatchers("/admin/**").hasRole(UserEnum.ADMIN.name())
-                                                .requestMatchers(HttpMethod.GET, "/users").hasRole(UserEnum.ADMIN.name())
-                                                .requestMatchers(HttpMethod.GET, "/users/{userId}").hasRole(UserEnum.ADMIN.name())
-                                                .requestMatchers(HttpMethod.GET, "/users/email/{email}").hasRole(UserEnum.ADMIN.name())
-                                                .requestMatchers(HttpMethod.PUT, "/users/{userId}").hasRole(UserEnum.ADMIN.name())
-                                                .requestMatchers(HttpMethod.DELETE, "/users/{userId}").hasRole(UserEnum.ADMIN.name())
+                                                .requestMatchers("/api/v1/admin/**").hasRole(UserEnum.ADMIN.name())
+                                                .requestMatchers(HttpMethod.GET, "/api/v1/users").hasRole(UserEnum.ADMIN.name())
+                                                .requestMatchers(HttpMethod.GET, "/api/v1/users/{userId}").hasRole(UserEnum.ADMIN.name())
+                                                .requestMatchers(HttpMethod.GET, "/api/v1/users/email/{email}").hasRole(UserEnum.ADMIN.name())
+                                                .requestMatchers(HttpMethod.PUT, "/api/v1/users/{userId}").hasRole(UserEnum.ADMIN.name())
+                                                .requestMatchers(HttpMethod.DELETE, "/api/v1/users/{userId}").hasRole(UserEnum.ADMIN.name())
 
                                                 // All other requests need authentication
                                                 .anyRequest().authenticated())

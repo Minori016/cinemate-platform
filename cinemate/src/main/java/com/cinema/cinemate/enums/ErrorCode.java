@@ -51,6 +51,13 @@ public enum ErrorCode {
 
     // === Lỗi Movies ===
     MOVIE_NOT_FOUND(2001, "Movie not found", HttpStatus.NOT_FOUND),
+    MOVIE_ALREADY_EXISTS(2002, "Movie with this title already exists", HttpStatus.BAD_REQUEST),
+    INVALID_DATE_RANGE(2003, "From date must be before or equal to to date", HttpStatus.BAD_REQUEST),
+    GENRE_NOT_FOUND(2004, "One or more genres not found", HttpStatus.NOT_FOUND),
+    COUNTRY_NOT_FOUND(2005, "One or more countries not found", HttpStatus.NOT_FOUND),
+    CINEMA_ROOM_NOT_FOUND(2006, "Cinema room not found", HttpStatus.NOT_FOUND),
+    SHOWTIME_CONFLICT(2007, "Showtime conflicts with existing schedule in this room", HttpStatus.CONFLICT),
+    POSTER_UPLOAD_FAILED(2008, "Failed to upload poster image", HttpStatus.INTERNAL_SERVER_ERROR),
     ;
 
     ErrorCode(int code, String message, HttpStatus statusCode) {

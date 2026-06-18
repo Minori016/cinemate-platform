@@ -30,4 +30,6 @@ public class MovieResponse {
     private Set<GenreResponse> genres;
     private Set<CountryResponse> countries;
     private Set<MovieMediaResponse> media;
+    private Set<MovieActorResponse> actors;
+    private Set<ShowtimeResponse> showtimes;
 }

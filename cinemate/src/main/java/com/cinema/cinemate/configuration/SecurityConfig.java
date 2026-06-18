@@ -43,6 +43,9 @@ public class SecurityConfig {
                                                 // Public endpoints
                                                 .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/movies", "/api/v1/movies/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/v1/genres", "/api/v1/genres/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/v1/countries", "/api/v1/countries/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/v1/cinema-rooms", "/api/v1/cinema-rooms/**").permitAll()
 
                                                 // Swagger / OpenAPI
                                                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**",
@@ -53,7 +56,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/v1/users/myinfo", "/api/v1/users/myinfo/**").authenticated()
 
                                                 // Admin only endpoints
-                                                .requestMatchers("/api/v1/admin/**").hasRole(UserEnum.ADMIN.name())
+                                                .requestMatchers("/api/v1/admin/**").hasAnyRole(UserEnum.ADMIN.name(), UserEnum.MANAGER.name())
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/users").hasRole(UserEnum.ADMIN.name())
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/users/{userId}").hasRole(UserEnum.ADMIN.name())
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/users/email/{email}").hasRole(UserEnum.ADMIN.name())

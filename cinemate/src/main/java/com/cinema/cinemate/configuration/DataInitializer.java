@@ -23,7 +23,7 @@ public class DataInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        log.info("Initializing default roles and admin user...");
+        log.info("Initializing default roles, admin, and manager users...");
 
         // 1. Initialize Roles
         Role adminRole = roleRepository.findByName("ADMIN")
@@ -31,6 +31,14 @@ public class DataInitializer implements ApplicationRunner {
                         Role.builder()
                                 .name("ADMIN")
                                 .description("Administrator Role")
+                                .build()
+                ));
+
+        Role managerRole = roleRepository.findByName("MANAGER")
+                .orElseGet(() -> roleRepository.save(
+                        Role.builder()
+                                .name("MANAGER")
+                                .description("Manager Role")
                                 .build()
                 ));
 
@@ -72,5 +80,29 @@ public class DataInitializer implements ApplicationRunner {
         } else {
             log.info("Admin account already exists.");
         }
+
+        // 3. Initialize Manager User if none exists
+        if (!userRepository.existsByEmail("manager@cinemate.com")) {
+            User manager = User.builder()
+                    .email("manager@cinemate.com")
+                    .password(passwordEncoder.encode("Manager@123456"))
+                    .fullName("Cinema Manager")
+                    .username("manager")
+                    .status("ACTIVE")
+                    .score(0)
+                    .build();
+
+            UserRole userRole = UserRole.builder()
+                    .user(manager)
+                    .role(managerRole)
+                    .build();
+
+            manager.getUserRoles().add(userRole);
+            userRepository.save(manager);
+            log.info("Default Manager account created: manager@cinemate.com / Manager@123456");
+        } else {
+            log.info("Manager account already exists.");
+        }
     }
 }
+

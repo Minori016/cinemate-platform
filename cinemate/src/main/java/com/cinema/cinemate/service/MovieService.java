@@ -167,8 +167,16 @@ public class MovieService {
         Movie movie = movieRepository.findById(movieId)
                 .orElseThrow(() -> new AppException(ErrorCode.MOVIE_NOT_FOUND));
 
-        // Delete associated showtimes first (no cascade from Movie side)
+        // Check for active or upcoming showtimes — prevent deletion if any exist
         List<Showtime> showtimes = showtimeRepository.findByMovieId(movieId);
+        boolean hasActiveShowtimes = showtimes.stream()
+                .anyMatch(s -> s.getEndTime().isAfter(java.time.OffsetDateTime.now()));
+
+        if (hasActiveShowtimes) {
+            throw new AppException(ErrorCode.MOVIE_HAS_ACTIVE_SHOWTIMES);
+        }
+
+        // Delete past showtimes (no cascade from Movie side)
         if (!showtimes.isEmpty()) {
             showtimeRepository.deleteAll(showtimes);
         }

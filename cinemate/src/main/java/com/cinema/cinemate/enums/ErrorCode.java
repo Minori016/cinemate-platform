@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
  *   - 9999       : Lỗi chưa phân loại
  *   - 1001-1009  : Lỗi liên quan đến user/auth
  *   - 1011-1019  : Lỗi validation input
+ *   - 2001-2013  : Lỗi liên quan đến movies (CRUD, validation, delete)
  */
 @Getter
 public enum ErrorCode {
@@ -58,6 +59,15 @@ public enum ErrorCode {
     CINEMA_ROOM_NOT_FOUND(2006, "Cinema room not found", HttpStatus.NOT_FOUND),
     SHOWTIME_CONFLICT(2007, "Showtime conflicts with existing schedule in this room", HttpStatus.CONFLICT),
     POSTER_UPLOAD_FAILED(2008, "Failed to upload poster image", HttpStatus.INTERNAL_SERVER_ERROR),
+
+    // === Lỗi Delete Movie ===
+    MOVIE_HAS_ACTIVE_SHOWTIMES(2009, "Cannot delete movie with active or upcoming showtimes", HttpStatus.CONFLICT),
+    MOVIE_DELETE_FAILED(2010, "Failed to delete movie", HttpStatus.INTERNAL_SERVER_ERROR),
+
+    // === Lỗi Add Movie Validation ===
+    INVALID_MOVIE_TITLE(2011, "Movie title must not be empty", HttpStatus.BAD_REQUEST),
+    INVALID_MOVIE_DURATION(2012, "Movie duration must be greater than 0", HttpStatus.BAD_REQUEST),
+    ACTOR_NOT_FOUND(2013, "One or more actors not found", HttpStatus.NOT_FOUND),
     ;
 
     ErrorCode(int code, String message, HttpStatus statusCode) {

@@ -159,6 +159,28 @@ public class MovieService {
     }
 
     // ==========================================
+    // ADMIN: DELETE MOVIE
+    // ==========================================
+
+    @Transactional
+    public void deleteMovie(UUID movieId) {
+        Movie movie = movieRepository.findById(movieId)
+                .orElseThrow(() -> new AppException(ErrorCode.MOVIE_NOT_FOUND));
+
+        // Delete associated showtimes first (no cascade from Movie side)
+        List<Showtime> showtimes = showtimeRepository.findByMovieId(movieId);
+        if (!showtimes.isEmpty()) {
+            showtimeRepository.deleteAll(showtimes);
+        }
+
+        // MovieActors and MovieMedia are auto-deleted via CascadeType.ALL + orphanRemoval
+        // ManyToMany join tables (movie_genres, movie_countries) are handled by JPA
+        movieRepository.delete(movie);
+
+        log.info("MOVIE_DELETED | id={} | title={}", movieId, movie.getTitleVn());
+    }
+
+    // ==========================================
     // PRIVATE HELPERS
     // ==========================================
 

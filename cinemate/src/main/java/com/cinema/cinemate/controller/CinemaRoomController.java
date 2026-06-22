@@ -13,12 +13,15 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.cinema.cinemate.service.CinemaRoomService;
+
 @RestController
 @RequestMapping("/api/v1/cinema-rooms")
 @RequiredArgsConstructor
 public class CinemaRoomController {
 
     private final CinemaRoomRepository cinemaRoomRepository;
+    private final CinemaRoomService cinemaRoomService;
 
     @GetMapping
     public ApiResponse<List<CinemaRoomResponse>> getCinemaRooms(
@@ -39,6 +42,20 @@ public class CinemaRoomController {
 
         return ApiResponse.<List<CinemaRoomResponse>>builder()
                 .result(result)
+                .build();
+    }
+
+    @GetMapping("/{id}")
+    public ApiResponse<CinemaRoomResponse> getCinemaRoomById(@org.springframework.web.bind.annotation.PathVariable UUID id) {
+        return ApiResponse.<CinemaRoomResponse>builder()
+                .result(cinemaRoomService.getCinemaRoomById(id))
+                .build();
+    }
+
+    @GetMapping("/{id}/seats")
+    public ApiResponse<List<com.cinema.cinemate.response.SeatResponse>> getSeatsByRoomId(@org.springframework.web.bind.annotation.PathVariable UUID id) {
+        return ApiResponse.<List<com.cinema.cinemate.response.SeatResponse>>builder()
+                .result(cinemaRoomService.getSeatsByRoomId(id))
                 .build();
     }
 }

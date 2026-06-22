@@ -9,7 +9,7 @@ import lombok.Data;
 @Data
 public class ResetPasswordRequest {
 
-    @NotBlank(message = "INVALID_KEY")
+    @NotBlank(message = "TOKEN_REQUIRED")
     private String token;
 
     @NotBlank(message = "INVALID_PASSWORD")
@@ -20,6 +20,6 @@ public class ResetPasswordRequest {
     )
     private String newPassword;
 
-    @NotBlank(message = "INVALID_KEY")
+    @NotBlank(message = "CONFIRM_PASSWORD_REQUIRED")
     private String confirmPassword;
 }

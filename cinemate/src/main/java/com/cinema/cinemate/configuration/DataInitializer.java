@@ -20,9 +20,18 @@ public class DataInitializer implements ApplicationRunner {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
+        log.info("Initializing database extensions...");
+        try {
+            jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS unaccent;");
+            log.info("Successfully enabled 'unaccent' extension.");
+        } catch (Exception e) {
+            log.warn("Could not create 'unaccent' extension. Please ensure it is created manually in PostgreSQL. Error: {}", e.getMessage());
+        }
+
         log.info("Initializing default roles, admin, and manager users...");
 
         // 1. Initialize Roles

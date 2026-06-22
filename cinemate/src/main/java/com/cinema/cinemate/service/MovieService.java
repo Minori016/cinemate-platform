@@ -5,6 +5,7 @@ import com.cinema.cinemate.enums.ErrorCode;
 import com.cinema.cinemate.exception.AppException;
 import com.cinema.cinemate.repository.*;
 import com.cinema.cinemate.request.AddMovieRequest;
+import com.cinema.cinemate.request.UpdateMovieRequest;
 import com.cinema.cinemate.request.ActorInput;
 import com.cinema.cinemate.request.ShowtimeInput;
 import com.cinema.cinemate.response.*;
@@ -41,7 +42,7 @@ public class MovieService {
     // ==========================================
 
     public PageResponse<MovieResponse> getMovies(String search, UUID genreId, String status, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("titleVn").ascending());
+        Pageable pageable = PageRequest.of(page, size, Sort.by("title_vn").ascending());
         LocalDate today = LocalDate.now();
 
         Page<Movie> moviePage = movieRepository.findMoviesWithFilters(
@@ -159,6 +160,94 @@ public class MovieService {
     }
 
     // ==========================================
+    // ADMIN: UPDATE MOVIE
+    // ==========================================
+
+    @Transactional
+    public MovieResponse updateMovie(UUID movieId, UpdateMovieRequest request, MultipartFile posterFile) {
+        // 1. Find existing movie
+        Movie movie = movieRepository.findById(movieId)
+                .orElseThrow(() -> new AppException(ErrorCode.MOVIE_NOT_FOUND));
+
+        // 2. Validate business rules (e.g., duplicate title but ignore current movie)
+        Optional<Movie> existingMovieWithTitle = movieRepository.findByTitleVn(request.getTitleVn().trim());
+        if (existingMovieWithTitle.isPresent() && !existingMovieWithTitle.get().getId().equals(movieId)) {
+            throw new AppException(ErrorCode.MOVIE_ALREADY_EXISTS);
+        }
+
+        if (request.getFromDate().isAfter(request.getToDate())) {
+            throw new AppException(ErrorCode.INVALID_DATE_RANGE);
+        }
+
+        // 3. Handle poster update
+        if (posterFile != null && !posterFile.isEmpty()) {
+            // Delete old poster if exists
+            if (movie.getPosterUrl() != null) {
+                cloudinaryService.deleteFile(movie.getPosterUrl());
+            }
+            // Upload new poster
+            String newPosterUrl = uploadPoster(posterFile);
+            movie.setPosterUrl(newPosterUrl);
+        }
+
+        // 4. Update basic fields
+        movie.setTitleVn(request.getTitleVn().trim());
+        movie.setTitleEn(request.getTitleEn() != null ? request.getTitleEn().trim() : null);
+        movie.setDescription(request.getDescription().trim());
+        movie.setDirector(request.getDirector().trim());
+        movie.setDurationMinutes(request.getDurationMinutes());
+        movie.setRating(request.getRating());
+        movie.setVersion(request.getVersion().trim());
+        movie.setFromDate(request.getFromDate());
+        movie.setToDate(request.getToDate());
+        movie.setLanguage(request.getLanguage());
+        movie.setTrailerUrl(request.getTrailerUrl());
+
+        // 5. Update genres
+        Set<Genre> genres = resolveGenres(request.getGenreIds());
+        movie.setGenres(genres);
+
+        // 6. Update countries
+        Set<Country> countries = resolveCountries(request.getCountryIds());
+        movie.setCountries(countries);
+
+        // 7. Update actors
+        movie.getMovieActors().clear(); // Clear existing to let orphanRemoval do its job
+        if (request.getActors() != null && !request.getActors().isEmpty()) {
+            for (ActorInput actorInput : request.getActors()) {
+                Actor actor = actorRepository.findByFullName(actorInput.getFullName().trim())
+                        .orElseGet(() -> actorRepository.save(
+                                Actor.builder()
+                                        .fullName(actorInput.getFullName().trim())
+                                        .build()
+                        ));
+
+                MovieActor movieActor = MovieActor.builder()
+                        .id(new MovieActorId(movie.getId(), actor.getId()))
+                        .movie(movie)
+                        .actor(actor)
+                        .characterName(actorInput.getCharacterName())
+                        .build();
+
+                movie.getMovieActors().add(movieActor);
+            }
+        }
+
+        // 8. Showtimes: User requested to "cứ để nguyên đó cho tôi" (leave them alone).
+        // We do not process showtimes in this update flow to prevent overwriting active schedules.
+
+        // 9. Save movie
+        Movie updatedMovie = movieRepository.save(movie);
+
+        log.info("MOVIE_UPDATED | id={} | title={}", updatedMovie.getId(), updatedMovie.getTitleVn());
+
+        // Since we didn't touch showtimes, we just fetch the existing ones for the response
+        List<Showtime> currentShowtimes = showtimeRepository.findByMovieId(updatedMovie.getId());
+        
+        return toMovieResponseWithShowtimes(updatedMovie, currentShowtimes);
+    }
+
+    // ==========================================
     // ADMIN: DELETE MOVIE
     // ==========================================
 
@@ -167,8 +256,16 @@ public class MovieService {
         Movie movie = movieRepository.findById(movieId)
                 .orElseThrow(() -> new AppException(ErrorCode.MOVIE_NOT_FOUND));
 
-        // Delete associated showtimes first (no cascade from Movie side)
+        // Check for active or upcoming showtimes — prevent deletion if any exist
         List<Showtime> showtimes = showtimeRepository.findByMovieId(movieId);
+        boolean hasActiveShowtimes = showtimes.stream()
+                .anyMatch(s -> s.getEndTime().isAfter(java.time.OffsetDateTime.now()));
+
+        if (hasActiveShowtimes) {
+            throw new AppException(ErrorCode.MOVIE_HAS_ACTIVE_SHOWTIMES);
+        }
+
+        // Delete past showtimes (no cascade from Movie side)
         if (!showtimes.isEmpty()) {
             showtimeRepository.deleteAll(showtimes);
         }

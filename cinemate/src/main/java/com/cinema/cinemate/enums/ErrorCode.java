@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
  *   - 9999       : Lỗi chưa phân loại
  *   - 1001-1009  : Lỗi liên quan đến user/auth
  *   - 1011-1019  : Lỗi validation input
+ *   - 2001-2013  : Lỗi liên quan đến movies (CRUD, validation, delete)
  */
 @Getter
 public enum ErrorCode {
@@ -37,6 +38,17 @@ public enum ErrorCode {
     INVALID_PASSWORD(1004, "Password must be at least 8 characters", HttpStatus.BAD_REQUEST),
     WEAK_PASSWORD(1012, "Password must contain uppercase, lowercase, digit and special character", HttpStatus.BAD_REQUEST),
     PASSWORD_MISMATCH(1014, "Password and Confirm Password do not match", HttpStatus.BAD_REQUEST),
+    USERNAME_REQUIRED(1023, "Username is required", HttpStatus.BAD_REQUEST),
+    FULLNAME_REQUIRED(1024, "Full name is required", HttpStatus.BAD_REQUEST),
+    BIRTHDAY_REQUIRED(1025, "Date of birth is required", HttpStatus.BAD_REQUEST),
+    GENDER_REQUIRED(1026, "Gender is required", HttpStatus.BAD_REQUEST),
+    PHONE_REQUIRED(1027, "Phone number is required", HttpStatus.BAD_REQUEST),
+    CONFIRM_PASSWORD_REQUIRED(1028, "Confirm password is required", HttpStatus.BAD_REQUEST),
+    TOKEN_REQUIRED(1029, "Token is required", HttpStatus.BAD_REQUEST),
+    IDENTITY_CARD_REQUIRED(1030, "Identity card is required", HttpStatus.BAD_REQUEST),
+    ADDRESS_REQUIRED(1031, "Address is required", HttpStatus.BAD_REQUEST),
+    EMAIL_REQUIRED(1032, "Email is required", HttpStatus.BAD_REQUEST),
+    PASSWORD_REQUIRED(1033, "Password is required", HttpStatus.BAD_REQUEST),
 
     // === Lỗi Forgot Password ===
     RESET_TOKEN_INVALID(1015, "Reset token is invalid", HttpStatus.BAD_REQUEST),
@@ -58,6 +70,15 @@ public enum ErrorCode {
     CINEMA_ROOM_NOT_FOUND(2006, "Cinema room not found", HttpStatus.NOT_FOUND),
     SHOWTIME_CONFLICT(2007, "Showtime conflicts with existing schedule in this room", HttpStatus.CONFLICT),
     POSTER_UPLOAD_FAILED(2008, "Failed to upload poster image", HttpStatus.INTERNAL_SERVER_ERROR),
+
+    // === Lỗi Delete Movie ===
+    MOVIE_HAS_ACTIVE_SHOWTIMES(2009, "Cannot delete movie with active or upcoming showtimes", HttpStatus.CONFLICT),
+    MOVIE_DELETE_FAILED(2010, "Failed to delete movie", HttpStatus.INTERNAL_SERVER_ERROR),
+
+    // === Lỗi Add Movie Validation ===
+    INVALID_MOVIE_TITLE(2011, "Movie title must not be empty", HttpStatus.BAD_REQUEST),
+    INVALID_MOVIE_DURATION(2012, "Movie duration must be greater than 0", HttpStatus.BAD_REQUEST),
+    ACTOR_NOT_FOUND(2013, "One or more actors not found", HttpStatus.NOT_FOUND),
     ;
 
     ErrorCode(int code, String message, HttpStatus statusCode) {

@@ -17,13 +17,27 @@ public interface MovieRepository extends JpaRepository<Movie, UUID> {
     boolean existsByTitleVn(String titleVn);
     Optional<Movie> findByTitleVn(String titleVn);
 
-    @Query("SELECT DISTINCT m FROM Movie m " +
-           "LEFT JOIN m.genres g " +
-           "WHERE (:search IS NULL OR LOWER(m.titleVn) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')) OR LOWER(m.titleEn) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')) OR LOWER(m.director) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))) " +
-           "AND (:genreId IS NULL OR g.id = :genreId) " +
+    @Query(value = "SELECT DISTINCT m.* FROM movies m " +
+           "LEFT JOIN movie_genres mg ON m.id = mg.movie_id " +
+           "WHERE (:search IS NULL OR " +
+           "      unaccent(lower(m.title_vn)) ILIKE unaccent(lower(concat('%', cast(:search as varchar), '%'))) OR " +
+           "      unaccent(lower(m.title_en)) ILIKE unaccent(lower(concat('%', cast(:search as varchar), '%'))) OR " +
+           "      unaccent(lower(m.director)) ILIKE unaccent(lower(concat('%', cast(:search as varchar), '%')))) " +
+           "AND (cast(:genreId as uuid) IS NULL OR mg.genre_id = cast(:genreId as uuid)) " +
            "AND (:status IS NULL " +
-           "     OR (:status = 'now-showing' AND m.fromDate <= :today AND m.toDate >= :today) " +
-           "     OR (:status = 'coming-soon' AND m.fromDate > :today))")
+           "     OR (:status = 'now-showing' AND m.from_date <= :today AND m.to_date >= :today) " +
+           "     OR (:status = 'coming-soon' AND m.from_date > :today))",
+           countQuery = "SELECT count(DISTINCT m.id) FROM movies m " +
+           "LEFT JOIN movie_genres mg ON m.id = mg.movie_id " +
+           "WHERE (:search IS NULL OR " +
+           "      unaccent(lower(m.title_vn)) ILIKE unaccent(lower(concat('%', cast(:search as varchar), '%'))) OR " +
+           "      unaccent(lower(m.title_en)) ILIKE unaccent(lower(concat('%', cast(:search as varchar), '%'))) OR " +
+           "      unaccent(lower(m.director)) ILIKE unaccent(lower(concat('%', cast(:search as varchar), '%')))) " +
+           "AND (cast(:genreId as uuid) IS NULL OR mg.genre_id = cast(:genreId as uuid)) " +
+           "AND (:status IS NULL " +
+           "     OR (:status = 'now-showing' AND m.from_date <= :today AND m.to_date >= :today) " +
+           "     OR (:status = 'coming-soon' AND m.from_date > :today))",
+           nativeQuery = true)
     Page<Movie> findMoviesWithFilters(
             @Param("search") String search,
             @Param("genreId") UUID genreId,

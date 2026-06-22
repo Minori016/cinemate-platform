@@ -38,6 +38,17 @@ public enum ErrorCode {
     INVALID_PASSWORD(1004, "Password must be at least 8 characters", HttpStatus.BAD_REQUEST),
     WEAK_PASSWORD(1012, "Password must contain uppercase, lowercase, digit and special character", HttpStatus.BAD_REQUEST),
     PASSWORD_MISMATCH(1014, "Password and Confirm Password do not match", HttpStatus.BAD_REQUEST),
+    USERNAME_REQUIRED(1023, "Username is required", HttpStatus.BAD_REQUEST),
+    FULLNAME_REQUIRED(1024, "Full name is required", HttpStatus.BAD_REQUEST),
+    BIRTHDAY_REQUIRED(1025, "Date of birth is required", HttpStatus.BAD_REQUEST),
+    GENDER_REQUIRED(1026, "Gender is required", HttpStatus.BAD_REQUEST),
+    PHONE_REQUIRED(1027, "Phone number is required", HttpStatus.BAD_REQUEST),
+    CONFIRM_PASSWORD_REQUIRED(1028, "Confirm password is required", HttpStatus.BAD_REQUEST),
+    TOKEN_REQUIRED(1029, "Token is required", HttpStatus.BAD_REQUEST),
+    IDENTITY_CARD_REQUIRED(1030, "Identity card is required", HttpStatus.BAD_REQUEST),
+    ADDRESS_REQUIRED(1031, "Address is required", HttpStatus.BAD_REQUEST),
+    EMAIL_REQUIRED(1032, "Email is required", HttpStatus.BAD_REQUEST),
+    PASSWORD_REQUIRED(1033, "Password is required", HttpStatus.BAD_REQUEST),
 
     // === Lỗi Forgot Password ===
     RESET_TOKEN_INVALID(1015, "Reset token is invalid", HttpStatus.BAD_REQUEST),

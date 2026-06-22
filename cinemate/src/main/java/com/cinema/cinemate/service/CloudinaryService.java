@@ -38,4 +38,34 @@ public class CloudinaryService {
             throw e;
         }
     }
+
+    /**
+     * Delete a file from Cloudinary using its secure URL.
+     */
+    public void deleteFile(String fileUrl) {
+        if (fileUrl == null || fileUrl.isEmpty()) {
+            return;
+        }
+        try {
+            // Extract public_id from URL: .../upload/[v12345678/][folder/][publicId].ext
+            String[] parts = fileUrl.split("/upload/");
+            if (parts.length == 2) {
+                String path = parts[1];
+                // Remove version if present
+                if (path.matches("^v\\d+/.*")) {
+                    path = path.replaceFirst("^v\\d+/", "");
+                }
+                // Remove extension
+                int dotIndex = path.lastIndexOf('.');
+                if (dotIndex != -1) {
+                    path = path.substring(0, dotIndex);
+                }
+                
+                log.info("Deleting file from Cloudinary with publicId: {}", path);
+                cloudinary.uploader().destroy(path, ObjectUtils.emptyMap());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to delete file from Cloudinary: {}", fileUrl, e);
+        }
+    }
 }

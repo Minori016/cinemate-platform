@@ -13,7 +13,7 @@ import java.time.LocalDate;
 public class ProfileUpdateRequest {
 
     /** Tên tài khoản (account) */
-    @NotBlank(message = "INVALID_KEY")
+    @NotBlank(message = "USERNAME_REQUIRED")
     private String username;
 
     /** Email đăng nhập */
@@ -31,26 +31,26 @@ public class ProfileUpdateRequest {
     private String password;
 
     /** Họ và tên đầy đủ */
-    @NotBlank(message = "INVALID_KEY")
+    @NotBlank(message = "FULLNAME_REQUIRED")
     private String fullName;
 
     /** Ngày sinh */
-    @NotNull(message = "INVALID_KEY")
+    @NotNull(message = "BIRTHDAY_REQUIRED")
     private LocalDate dayOfBirth;
 
     /** Giới tính (Sex) */
-    @NotBlank(message = "INVALID_KEY")
+    @NotBlank(message = "GENDER_REQUIRED")
     private String gender;
 
     /** Số CMND / CCCD */
-    @NotBlank(message = "INVALID_KEY")
+    @NotBlank(message = "IDENTITY_CARD_REQUIRED")
     private String identityCard;
 
     /** Số điện thoại */
-    @NotBlank(message = "INVALID_KEY")
+    @NotBlank(message = "PHONE_REQUIRED")
     private String phoneNumber;
 
     /** Địa chỉ */
-    @NotBlank(message = "INVALID_KEY")
+    @NotBlank(message = "ADDRESS_REQUIRED")
     private String address;
 }

@@ -1,5 +1,6 @@
 package com.cinema.cinemate.entity;
 
+import com.cinema.cinemate.enums.SeatType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -9,12 +10,14 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "cinema_rooms")
+@Table(name = "seats", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"room_id", "row_label", "seat_number"})
+})
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CinemaRoom {
+public class Seat {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -22,22 +25,23 @@ public class CinemaRoom {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cinema_id")
+    @JoinColumn(name = "room_id", nullable = false)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    private Cinema cinema;
+    private CinemaRoom room;
 
-    @Column(name = "name", nullable = false, length = 50)
-    private String name;
+    @Column(name = "row_label", nullable = false, length = 5)
+    private String rowLabel;
 
-    @Column(name = "capacity", nullable = false)
-    private Integer capacity;
+    @Column(name = "seat_number", nullable = false)
+    private Integer seatNumber;
 
-    @Column(name = "row_count")
-    private Integer rowCount;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "seat_type", nullable = false, length = 50)
+    private SeatType seatType;
 
-    @Column(name = "column_count")
-    private Integer columnCount;
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

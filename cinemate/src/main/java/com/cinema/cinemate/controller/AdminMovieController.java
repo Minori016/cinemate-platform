@@ -44,6 +44,28 @@ public class AdminMovieController {
     }
 
     /**
+     * Update an existing movie.
+     *
+     * Accepts multipart/form-data with:
+     *   - "movie": JSON body (UpdateMovieRequest)
+     *   - "posterFile": Image file (optional)
+     *
+     * Only ADMIN role is authorized to perform this action.
+     */
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<MovieResponse> updateMovie(
+            @PathVariable UUID id,
+            @RequestPart("movie") @Valid com.cinema.cinemate.request.UpdateMovieRequest request,
+            @RequestPart(value = "posterFile", required = false) MultipartFile posterFile
+    ) {
+        return ApiResponse.<MovieResponse>builder()
+                .message("Movie updated successfully")
+                .result(movieService.updateMovie(id, request, posterFile))
+                .build();
+    }
+
+    /**
      * Delete a movie permanently from the system.
      *
      * AC-01: Frontend must show confirmation dialog before calling this endpoint.

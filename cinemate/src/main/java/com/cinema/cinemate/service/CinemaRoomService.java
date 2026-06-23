@@ -43,6 +43,7 @@ public class CinemaRoomService {
 
         // Wipe existing seats
         seatRepository.deleteByRoomId(roomId);
+        seatRepository.flush();
 
         // Insert new seats
         List<Seat> newSeats = new ArrayList<>();

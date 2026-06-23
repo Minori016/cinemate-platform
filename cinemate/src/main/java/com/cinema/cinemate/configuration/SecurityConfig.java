@@ -55,13 +55,8 @@ public class SecurityConfig {
                                                 // Authenticated user self info
                                                 .requestMatchers("/api/v1/users/myinfo", "/api/v1/users/myinfo/**").authenticated()
 
-                                                // Admin only endpoints
+                                                // Admin only endpoints (all under /api/v1/admin/**)
                                                 .requestMatchers("/api/v1/admin/**").hasAnyRole(UserEnum.ADMIN.name(), UserEnum.MANAGER.name())
-                                                .requestMatchers(HttpMethod.GET, "/api/v1/users").hasRole(UserEnum.ADMIN.name())
-                                                .requestMatchers(HttpMethod.GET, "/api/v1/users/{userId}").hasRole(UserEnum.ADMIN.name())
-                                                .requestMatchers(HttpMethod.GET, "/api/v1/users/email/{email}").hasRole(UserEnum.ADMIN.name())
-                                                .requestMatchers(HttpMethod.PUT, "/api/v1/users/{userId}").hasRole(UserEnum.ADMIN.name())
-                                                .requestMatchers(HttpMethod.DELETE, "/api/v1/users/{userId}").hasRole(UserEnum.ADMIN.name())
 
                                                 // All other requests need authentication
                                                 .anyRequest().authenticated())

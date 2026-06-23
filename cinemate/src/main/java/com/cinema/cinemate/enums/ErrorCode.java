@@ -21,7 +21,6 @@ public enum ErrorCode {
 
     // === Lỗi nghiệp vụ User ===
     USER_EXISTED(1002, "User existed", HttpStatus.BAD_REQUEST),
-    USERNAME_EXISTED(1022, "Username already exists", HttpStatus.BAD_REQUEST),
     USERNAME_INVALID(1003, "Username must be at least 3 characters", HttpStatus.BAD_REQUEST),
     USER_NOT_EXISTED(1005, "User not existed", HttpStatus.NOT_FOUND),
 
@@ -79,6 +78,10 @@ public enum ErrorCode {
     INVALID_MOVIE_TITLE(2011, "Movie title must not be empty", HttpStatus.BAD_REQUEST),
     INVALID_MOVIE_DURATION(2012, "Movie duration must be greater than 0", HttpStatus.BAD_REQUEST),
     ACTOR_NOT_FOUND(2013, "One or more actors not found", HttpStatus.NOT_FOUND),
+
+    // === Lỗi Employee ===
+    USERNAME_EXISTED(3001, "The inputted account is already existed, please choose another account name", HttpStatus.BAD_REQUEST),
+    EMPLOYEE_NOT_FOUND(3002, "Employee not found", HttpStatus.NOT_FOUND),
     ;
 
     ErrorCode(int code, String message, HttpStatus statusCode) {

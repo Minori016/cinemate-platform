@@ -17,6 +17,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.cinema.cinemate.request.ChangePasswordRequest;
 import com.cinema.cinemate.request.ProfileUpdateRequest;
+import com.cinema.cinemate.request.AddEmployeeRequest;
+import com.cinema.cinemate.response.PageResponse;
 import com.cinema.cinemate.service.AuthenticationService;
 import com.cinema.cinemate.service.CloudinaryService;
 import com.cinema.cinemate.service.EmailService;
@@ -26,6 +28,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -117,6 +121,79 @@ public class UserService {
                 savedUser.getCreatedAt());
 
         return toUserResponse(savedUser);
+    }
+
+    // ========================
+    // ADD EMPLOYEE (Admin/Manager)
+    // ========================
+
+    /**
+     * Tạo nhân viên mới bởi Admin/Manager (AC-01 → AC-06).
+     *
+     * Luồng xử lý:
+     * 1. Kiểm tra password và confirmPassword khớp nhau (AC-02)
+     * 2. Kiểm tra username đã tồn tại chưa → trả message theo AC-04
+     * 3. Kiểm tra email đã tồn tại chưa
+     * 4. Hash password trước khi lưu (AC-02)
+     * 5. Gán role STAFF hoặc MANAGER cho nhân viên mới
+     * 6. Log sự kiện tạo nhân viên
+     *
+     * @param request DTO chứa thông tin nhân viên từ Admin/Manager
+     * @return UserResponse chứa thông tin nhân viên đã tạo
+     * @throws AppException nếu password không khớp, username/email đã tồn tại
+     */
+    public UserResponse createEmployee(AddEmployeeRequest request) {
+        // AC-02: Kiểm tra Password và Confirm Password phải khớp nhau
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            throw new AppException(ErrorCode.PASSWORD_MISMATCH);
+        }
+
+        // AC-02: Kiểm tra email đã tồn tại chưa
+        if (userRepository.existsByEmail(request.getEmail().trim())) {
+            throw new AppException(ErrorCode.USER_EXISTED);
+        }
+
+        // AC-02 + AC-04: Kiểm tra username đã tồn tại chưa
+        if (userRepository.existsByUsername(request.getUsername().trim())) {
+            throw new AppException(ErrorCode.USERNAME_EXISTED);
+        }
+
+        // Lấy role từ request (STAFF hoặc MANAGER)
+        Role employeeRole = roleRepository.findByName(request.getRole())
+                .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION));
+
+        // Tạo entity User từ request
+        User employee = new User();
+        employee.setEmail(request.getEmail().trim());
+        employee.setPassword(passwordEncoder.encode(request.getPassword()));
+        employee.setFullName(request.getFullName().trim());
+        employee.setUsername(request.getUsername().trim());
+        employee.setDayOfBirth(request.getDayOfBirth());
+        employee.setGender(request.getGender().trim());
+        employee.setIdentityCard(request.getIdentityCard().trim());
+        employee.setPhoneNumber(request.getPhoneNumber().trim());
+        employee.setAddress(request.getAddress().trim());
+        employee.setScore(0);
+        employee.setStatus("ACTIVE");
+
+        // Gán role cho nhân viên mới
+        UserRole userRole = UserRole.builder()
+                .user(employee)
+                .role(employeeRole)
+                .build();
+        employee.getUserRoles().add(userRole);
+
+        // Lưu vào database
+        User savedEmployee = userRepository.save(employee);
+
+        // Log sự kiện tạo nhân viên
+        log.info("ADD_EMPLOYEE_EVENT | account={} | email={} | role={} | status=SUCCESS | timestamp={}",
+                savedEmployee.getUsername(),
+                savedEmployee.getEmail(),
+                request.getRole(),
+                savedEmployee.getCreatedAt());
+
+        return toUserResponse(savedEmployee);
     }
 
     // ========================
@@ -345,6 +422,59 @@ public class UserService {
             throw new AppException(ErrorCode.USER_NOT_EXISTED);
         }
         userRepository.deleteById(id);
+    }
+
+    // ========================
+    // EMPLOYEE MANAGEMENT (Admin/Manager)
+    // ========================
+
+    /**
+     * Tìm kiếm & phân trang danh sách nhân viên (STAFF, MANAGER).
+     *
+     * @param search   từ khóa tìm kiếm (username, fullName, email, phoneNumber)
+     * @param role     lọc theo role (STAFF / MANAGER), null = tất cả
+     * @param pageable thông tin phân trang
+     * @return PageResponse chứa danh sách nhân viên
+     */
+    public PageResponse<UserResponse> searchEmployees(String search, String role, Pageable pageable) {
+        Page<User> employeePage = userRepository.findEmployeesWithFilters(search, role, pageable);
+
+        List<UserResponse> employees = employeePage.getContent().stream()
+                .map(this::toUserResponse)
+                .collect(Collectors.toList());
+
+        return PageResponse.<UserResponse>builder()
+                .content(employees)
+                .pageNumber(employeePage.getNumber())
+                .pageSize(employeePage.getSize())
+                .totalElements(employeePage.getTotalElements())
+                .totalPages(employeePage.getTotalPages())
+                .last(employeePage.isLast())
+                .build();
+    }
+
+    /**
+     * Xóa nhân viên theo UUID.
+     *
+     * @param employeeId UUID của nhân viên cần xóa
+     * @throws AppException nếu nhân viên không tồn tại
+     */
+    public void deleteEmployee(UUID employeeId) {
+        User employee = userRepository.findById(employeeId)
+                .orElseThrow(() -> new AppException(ErrorCode.EMPLOYEE_NOT_FOUND));
+
+        Set<String> roles = employee.getUserRoles().stream()
+                .map(ur -> ur.getRole().getName())
+                .collect(Collectors.toSet());
+
+        if (!roles.contains("STAFF") && !roles.contains("MANAGER")) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        userRepository.delete(employee);
+
+        log.info("DELETE_EMPLOYEE_EVENT | employeeId={} | roles={} | status=SUCCESS | timestamp={}",
+                employeeId, roles, java.time.LocalDateTime.now());
     }
 
     /**

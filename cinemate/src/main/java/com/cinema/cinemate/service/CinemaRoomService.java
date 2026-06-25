@@ -47,7 +47,12 @@ public class CinemaRoomService {
 
         // Insert new seats
         List<Seat> newSeats = new ArrayList<>();
+        java.util.Set<String> seenSeats = new java.util.HashSet<>();
         for (SeatRequest sr : request.getSeats()) {
+            String seatKey = sr.getRow() + "-" + sr.getNumber();
+            if (!seenSeats.add(seatKey)) {
+                continue; // Skip duplicate seats
+            }
             SeatType type;
             try {
                 type = SeatType.valueOf(sr.getType().toUpperCase());
@@ -143,6 +148,7 @@ public class CinemaRoomService {
         if (!cinemaRoomRepository.existsById(id)) {
             throw new RuntimeException("Cinema room not found");
         }
+        seatRepository.deleteByRoomId(id);
         cinemaRoomRepository.deleteById(id);
     }
 

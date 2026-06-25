@@ -198,10 +198,12 @@ public class UserService {
         employee.getUserRoles().add(userRole);
 
         // Tạo và liên kết Staff entity
+        boolean isStaffRole = "STAFF".equalsIgnoreCase(request.getRole().trim());
         Staff staff = Staff.builder()
                 .user(employee)
                 .cinema(cinema)
                 .salary(request.getSalary())
+                .isFirstLogin(isStaffRole)
                 .build();
         employee.setStaff(staff);
 
@@ -284,7 +286,11 @@ public class UserService {
         // Change password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         if (user.getStaff() != null) {
-            user.getStaff().setIsFirstLogin(false);
+            boolean isStaff = user.getUserRoles().stream()
+                    .anyMatch(ur -> "STAFF".equals(ur.getRole().getName()));
+            if (isStaff) {
+                user.getStaff().setIsFirstLogin(false);
+            }
         }
         userRepository.save(user);
 
@@ -645,7 +651,9 @@ public class UserService {
 
         if (user.getStaff() != null) {
             salary = user.getStaff().getSalary();
-            isFirstLogin = user.getStaff().getIsFirstLogin();
+            if (roles.contains("STAFF")) {
+                isFirstLogin = user.getStaff().getIsFirstLogin();
+            }
             if (user.getStaff().getCinema() != null) {
                 cinemaId = user.getStaff().getCinema().getId();
                 cinemaName = user.getStaff().getCinema().getName();

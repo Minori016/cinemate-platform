@@ -37,7 +37,7 @@ public class Staff {
 
     @Column(name = "is_first_login", nullable = false)
     @Builder.Default
-    private Boolean isFirstLogin = true;
+    private Boolean isFirstLogin = false;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

@@ -35,10 +35,20 @@ public class CinemaRoomService {
         CinemaRoom room = cinemaRoomRepository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("Cinema room not found"));
 
+        // Calculate real physical capacity (COUPLE counts as 2)
+        int totalCapacity = 0;
+        for (SeatRequest sr : request.getSeats()) {
+            if ("COUPLE".equalsIgnoreCase(sr.getType())) {
+                totalCapacity += 2;
+            } else {
+                totalCapacity += 1;
+            }
+        }
+
         // Update room capacity & grid size
         room.setRowCount(request.getRows());
         room.setColumnCount(request.getCols());
-        room.setCapacity(request.getSeats().size());
+        room.setCapacity(totalCapacity);
         cinemaRoomRepository.save(room);
 
         // Wipe existing seats

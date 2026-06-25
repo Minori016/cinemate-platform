@@ -3,6 +3,7 @@ package com.cinema.cinemate.configuration;
 import com.cinema.cinemate.entity.Role;
 import com.cinema.cinemate.entity.User;
 import com.cinema.cinemate.entity.UserRole;
+import com.cinema.cinemate.repository.CinemaRepository;
 import com.cinema.cinemate.repository.RoleRepository;
 import com.cinema.cinemate.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ public class DataInitializer implements ApplicationRunner {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+    private final CinemaRepository cinemaRepository;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
@@ -111,6 +113,25 @@ public class DataInitializer implements ApplicationRunner {
             log.info("Default Manager account created: manager@cinemate.com / Manager@123456");
         } else {
             log.info("Manager account already exists.");
+        }
+
+        // 4. Initialize Cinemas if they don't exist
+        log.info("Initializing default cinemas...");
+        seedCinema("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", "Cinemate HQ", "123 Main St, Quận 1, TP. Hồ Chí Minh", "1900 1234");
+        seedCinema("b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22", "Cinemate Q7", "458 Nguyễn Thị Thập, Phường Tân Quy, Quận 7, TP. Hồ Chí Minh", "1900 1238");
+        seedCinema("c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a33", "Cinemate Bình Tân", "1 Đường Số 17A, Phường Bình Trị Đông B, Quận Bình Tân, TP. Hồ Chí Minh", "1900 1239");
+        seedCinema("d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44", "Cinemate Quận 9", "50 Lê Văn Việt, Phường Hiệp Phú, Quận 9, TP. Hồ Chí Minh", "1900 1240");
+        seedCinema("e0eebc99-9c0b-4ef8-bb6d-6bb9bd380a55", "Cinemate Bình Thạnh", "156 Xô Viết Nghệ Tĩnh, Phường 26, Quận Bình Thạnh, TP. Hồ Chí Minh", "1900 1241");
+        seedCinema("f0eebc99-9c0b-4ef8-bb6d-6bb9bd380a66", "Cinemate Cần Thơ", "1 Hòa Bình, Phường Tân An, Quận Ninh Kiều, TP. Cần Thơ", "1900 1242");
+    }
+
+    private void seedCinema(String id, String name, String address, String hotline) {
+        if (!cinemaRepository.existsByName(name)) {
+            jdbcTemplate.update(
+                "INSERT INTO cinemas (id, name, address, hotline, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())",
+                java.util.UUID.fromString(id), name, address, hotline
+            );
+            log.info("Seeded cinema using JdbcTemplate: {}", name);
         }
     }
 }

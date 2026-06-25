@@ -35,4 +35,5 @@ public class UserResponse {
     private java.math.BigDecimal salary;
     private java.util.UUID cinemaId;
     private String cinemaName;
+    private Boolean isFirstLogin;
 }

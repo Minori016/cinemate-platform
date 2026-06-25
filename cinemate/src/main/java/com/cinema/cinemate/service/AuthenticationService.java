@@ -66,6 +66,11 @@ public class AuthenticationService {
                 .map(ur -> ur.getRole().getName())
                 .collect(Collectors.toList());
 
+        boolean isFirstLogin = false;
+        if (user.getStaff() != null && user.getStaff().getIsFirstLogin() != null) {
+            isFirstLogin = user.getStaff().getIsFirstLogin();
+        }
+
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
                 .subject(user.getEmail())
                 .issuer("cinemate")
@@ -74,6 +79,7 @@ public class AuthenticationService {
                         Instant.now().plus(EXPIRATION_TIME, ChronoUnit.SECONDS).toEpochMilli()))
                 .claim("userId", user.getUuid().toString())
                 .claim("roles", roles)
+                .claim("isFirstLogin", isFirstLogin)
                 .build();
 
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());

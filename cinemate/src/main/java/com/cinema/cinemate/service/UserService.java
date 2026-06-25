@@ -198,15 +198,29 @@ public class UserService {
         employee.getUserRoles().add(userRole);
 
         // Tạo và liên kết Staff entity
+        boolean isStaffRole = "STAFF".equalsIgnoreCase(request.getRole().trim());
         Staff staff = Staff.builder()
                 .user(employee)
                 .cinema(cinema)
                 .salary(request.getSalary())
+                .isFirstLogin(isStaffRole)
                 .build();
         employee.setStaff(staff);
 
         // Lưu vào database (JPA cascade sẽ lưu cả staff)
         User savedEmployee = userRepository.save(employee);
+
+        // Gửi email thông báo tài khoản
+        try {
+            emailService.sendEmployeeAccountCreationEmail(
+                savedEmployee.getEmail(), 
+                savedEmployee.getUsername(), 
+                request.getPassword()
+            );
+        } catch (Exception e) {
+            log.error("Error sending account creation email to {}", savedEmployee.getEmail(), e);
+            // Non-blocking: we still allow the employee to be created even if email fails
+        }
 
         // Log sự kiện tạo nhân viên
         log.info("ADD_EMPLOYEE_EVENT | account={} | email={} | role={} | status=SUCCESS | timestamp={}",
@@ -283,6 +297,13 @@ public class UserService {
 
         // Change password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        if (user.getStaff() != null) {
+            boolean isStaff = user.getUserRoles().stream()
+                    .anyMatch(ur -> "STAFF".equals(ur.getRole().getName()));
+            if (isStaff) {
+                user.getStaff().setIsFirstLogin(false);
+            }
+        }
         userRepository.save(user);
 
         log.info("CHANGE_PASSWORD | email={} | timestamp={}", user.getEmail(), java.time.LocalDateTime.now());
@@ -294,6 +315,7 @@ public class UserService {
     public UserResponse updateProfile(UUID targetUserId, ProfileUpdateRequest request, UUID actorId, Set<String> actorRoles) {
         User targetUser = userRepository.findById(targetUserId)
                 .orElseThrow(() -> {
+            
                     logEditEvent(actorId, actorRoles, targetUserId, java.util.Collections.emptySet(), "FAILED");
                     return new AppException(ErrorCode.USER_NOT_EXISTED);
                 });
@@ -352,7 +374,8 @@ public class UserService {
         }
     }
 
-    private void logEditEvent(UUID actorId, Set<String> actorRoles, UUID targetId, Set<String> targetRoles, String status) {
+    private void logEditEvent(UUID actorId, Set<String> actorRoles, UUID targetId, Set<String> targetRoles,
+            String status) {
         UUID employeeId = null;
         UUID memberId = null;
 
@@ -638,9 +661,13 @@ public class UserService {
         java.math.BigDecimal salary = null;
         java.util.UUID cinemaId = null;
         String cinemaName = null;
+        Boolean isFirstLogin = null;
 
         if (user.getStaff() != null) {
             salary = user.getStaff().getSalary();
+            if (roles.contains("STAFF")) {
+                isFirstLogin = user.getStaff().getIsFirstLogin();
+            }
             if (user.getStaff().getCinema() != null) {
                 cinemaId = user.getStaff().getCinema().getId();
                 cinemaName = user.getStaff().getCinema().getName();
@@ -666,6 +693,7 @@ public class UserService {
                 .salary(salary)
                 .cinemaId(cinemaId)
                 .cinemaName(cinemaName)
+                .isFirstLogin(isFirstLogin)
                 .build();
     }
 }

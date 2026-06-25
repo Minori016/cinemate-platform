@@ -4,7 +4,9 @@ import com.cinema.cinemate.request.ChangePasswordRequest;
 import com.cinema.cinemate.request.ProfileUpdateRequest;
 import com.cinema.cinemate.response.ApiResponse;
 import com.cinema.cinemate.response.UserResponse;
+import com.cinema.cinemate.response.ScoreHistoryResponse;
 import com.cinema.cinemate.service.UserService;
+import com.cinema.cinemate.service.ScoreHistoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,6 +24,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserController {
         private final UserService userService;
+        private final ScoreHistoryService scoreHistoryService;
 
         // ============ ENDPOINTS FOR CURRENT USER (ALL ROLES) ============
 
@@ -73,6 +76,20 @@ public class UserController {
                 return ApiResponse.<UserResponse>builder()
                                 .message("Avatar uploaded successfully")
                                 .result(updatedUser)
+                                .build();
+        }
+
+        @GetMapping("/myinfo/score-history")
+        public ApiResponse<List<ScoreHistoryResponse>> getMyScoreHistory(
+                        @AuthenticationPrincipal Jwt jwt,
+                        @RequestParam("fromDate") String fromDateStr,
+                        @RequestParam("toDate") String toDateStr,
+                        @RequestParam("type") String type) {
+                String userIdStr = jwt.getClaim("userId");
+                UUID userId = UUID.fromString(userIdStr);
+                List<ScoreHistoryResponse> result = scoreHistoryService.getMyScoreHistory(userId, fromDateStr, toDateStr, type);
+                return ApiResponse.<List<ScoreHistoryResponse>>builder()
+                                .result(result)
                                 .build();
         }
 

@@ -13,10 +13,8 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class UpdateEmployeeRequest {
 
-    /** Tên tài khoản (Account) - phải unique */
-    @NotBlank(message = "USERNAME_REQUIRED")
-    @Size(min = 3, max = 28, message = "Account name must be between 3 and 28 characters")
-    private String username;
+    /** URL hình ảnh nhân viên (tùy chọn) */
+    private String image;
 
     /** Mật khẩu mới (Tùy chọn) */
     private String password;

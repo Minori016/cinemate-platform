@@ -12,4 +12,13 @@ public interface EmailService {
      * @param resetToken token reset (JWT)
      */
     void sendPasswordResetEmail(String toEmail, String resetToken);
+
+    /**
+     * Gửi email thông báo tạo tài khoản thành công cho nhân viên.
+     *
+     * @param toEmail   email người nhận
+     * @param username  tên đăng nhập
+     * @param tempPassword mật khẩu tạm thời
+     */
+    void sendEmployeeAccountCreationEmail(String toEmail, String username, String tempPassword);
 }

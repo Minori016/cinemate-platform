@@ -210,6 +210,18 @@ public class UserService {
         // Lưu vào database (JPA cascade sẽ lưu cả staff)
         User savedEmployee = userRepository.save(employee);
 
+        // Gửi email thông báo tài khoản
+        try {
+            emailService.sendEmployeeAccountCreationEmail(
+                savedEmployee.getEmail(), 
+                savedEmployee.getUsername(), 
+                request.getPassword()
+            );
+        } catch (Exception e) {
+            log.error("Error sending account creation email to {}", savedEmployee.getEmail(), e);
+            // Non-blocking: we still allow the employee to be created even if email fails
+        }
+
         // Log sự kiện tạo nhân viên
         log.info("ADD_EMPLOYEE_EVENT | account={} | email={} | role={} | status=SUCCESS | timestamp={}",
                 savedEmployee.getUsername(),
@@ -303,6 +315,7 @@ public class UserService {
     public UserResponse updateProfile(UUID targetUserId, ProfileUpdateRequest request, UUID actorId, Set<String> actorRoles) {
         User targetUser = userRepository.findById(targetUserId)
                 .orElseThrow(() -> {
+            
                     logEditEvent(actorId, actorRoles, targetUserId, java.util.Collections.emptySet(), "FAILED");
                     return new AppException(ErrorCode.USER_NOT_EXISTED);
                 });
@@ -361,7 +374,8 @@ public class UserService {
         }
     }
 
-    private void logEditEvent(UUID actorId, Set<String> actorRoles, UUID targetId, Set<String> targetRoles, String status) {
+    private void logEditEvent(UUID actorId, Set<String> actorRoles, UUID targetId, Set<String> targetRoles,
+            String status) {
         UUID employeeId = null;
         UUID memberId = null;
 

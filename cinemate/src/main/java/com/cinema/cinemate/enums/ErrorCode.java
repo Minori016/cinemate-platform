@@ -48,6 +48,7 @@ public enum ErrorCode {
     ADDRESS_REQUIRED(1031, "Address is required", HttpStatus.BAD_REQUEST),
     EMAIL_REQUIRED(1032, "Email is required", HttpStatus.BAD_REQUEST),
     PASSWORD_REQUIRED(1033, "Password is required", HttpStatus.BAD_REQUEST),
+    STATUS_REQUIRED(1034, "Status is required", HttpStatus.BAD_REQUEST),
 
     // === Lỗi Forgot Password ===
     RESET_TOKEN_INVALID(1015, "Reset token is invalid", HttpStatus.BAD_REQUEST),

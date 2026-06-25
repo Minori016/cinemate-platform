@@ -76,11 +76,17 @@ public class AuthController {
                 // Tạo JWT token chứa userId, email, roles
                 String token = authenticationService.generateToken(user);
 
+                Boolean isFirstLogin = null;
+                if (user.getStaff() != null) {
+                        isFirstLogin = user.getStaff().getIsFirstLogin();
+                }
+
                 // Trả về token cho client
                 return ApiResponse.<AuthenticationResponse>builder()
                                 .result(AuthenticationResponse.builder()
                                                 .token(token)
                                                 .authenticated(true)
+                                                .isFirstLogin(isFirstLogin)
                                                 .build())
                                 .build();
         }

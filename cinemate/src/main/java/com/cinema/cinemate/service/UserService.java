@@ -283,6 +283,9 @@ public class UserService {
 
         // Change password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        if (user.getStaff() != null) {
+            user.getStaff().setIsFirstLogin(false);
+        }
         userRepository.save(user);
 
         log.info("CHANGE_PASSWORD | email={} | timestamp={}", user.getEmail(), java.time.LocalDateTime.now());
@@ -638,9 +641,11 @@ public class UserService {
         java.math.BigDecimal salary = null;
         java.util.UUID cinemaId = null;
         String cinemaName = null;
+        Boolean isFirstLogin = null;
 
         if (user.getStaff() != null) {
             salary = user.getStaff().getSalary();
+            isFirstLogin = user.getStaff().getIsFirstLogin();
             if (user.getStaff().getCinema() != null) {
                 cinemaId = user.getStaff().getCinema().getId();
                 cinemaName = user.getStaff().getCinema().getName();
@@ -666,6 +671,7 @@ public class UserService {
                 .salary(salary)
                 .cinemaId(cinemaId)
                 .cinemaName(cinemaName)
+                .isFirstLogin(isFirstLogin)
                 .build();
     }
 }

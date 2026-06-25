@@ -35,6 +35,10 @@ public class Staff {
     @Column(name = "salary", precision = 10, scale = 2)
     private BigDecimal salary;
 
+    @Column(name = "is_first_login", nullable = false)
+    @Builder.Default
+    private Boolean isFirstLogin = true;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

@@ -94,4 +94,11 @@ public class AddEmployeeRequest {
      */
     @NotBlank(message = "ROLE_REQUIRED")
     private String role;
+
+    @NotNull(message = "SALARY_REQUIRED")
+    @DecimalMin(value = "0.0", inclusive = false, message = "Salary must be greater than 0")
+    private java.math.BigDecimal salary;
+
+    @NotNull(message = "CINEMA_REQUIRED")
+    private java.util.UUID cinemaId;
 }

@@ -91,6 +91,11 @@ public class User {
     @EqualsAndHashCode.Exclude
     private Set<UserRole> userRoles = new HashSet<>();
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Staff staff;
+
     // --- Thời gian ---
 
     @CreationTimestamp

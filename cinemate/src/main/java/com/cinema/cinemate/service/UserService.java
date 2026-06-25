@@ -487,13 +487,6 @@ public class UserService {
             }
         }
 
-        // Kiểm tra username duy nhất (nếu thay đổi username)
-        if (employee.getUsername() == null || !employee.getUsername().equalsIgnoreCase(request.getUsername().trim())) {
-            if (userRepository.existsByUsername(request.getUsername().trim())) {
-                throw new AppException(ErrorCode.USERNAME_EXISTED);
-            }
-        }
-
         // Cập nhật password mới (nếu có cung cấp)
         if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
             if (!request.getPassword().equals(request.getConfirmPassword())) {
@@ -509,8 +502,12 @@ public class UserService {
             employee.setPassword(passwordEncoder.encode(request.getPassword()));
         }
 
+        // Cập nhật hình ảnh (nếu có cung cấp)
+        if (request.getImage() != null) {
+            employee.setImage(request.getImage().trim());
+        }
+
         // Cập nhật thông tin cá nhân cơ bản
-        employee.setUsername(request.getUsername().trim());
         employee.setEmail(request.getEmail().trim());
         employee.setFullName(request.getFullName().trim());
         employee.setDayOfBirth(request.getDayOfBirth());

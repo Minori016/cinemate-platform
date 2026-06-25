@@ -8,6 +8,13 @@ import com.cinema.cinemate.entity.Role;
 import com.cinema.cinemate.entity.UserRole;
 import com.cinema.cinemate.repository.UserRepository;
 import com.cinema.cinemate.repository.RoleRepository;
+import com.cinema.cinemate.repository.CinemaRepository;
+import com.cinema.cinemate.repository.StaffRepository;
+import com.cinema.cinemate.entity.User;
+import com.cinema.cinemate.entity.Role;
+import com.cinema.cinemate.entity.UserRole;
+import com.cinema.cinemate.entity.Cinema;
+import com.cinema.cinemate.entity.Staff;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -49,6 +56,8 @@ public class UserService {
     private final EmailService emailService;
     private final AuthenticationService authenticationService;
     private final CloudinaryService cloudinaryService;
+    private final CinemaRepository cinemaRepository;
+    private final StaffRepository staffRepository;
 
     // ========================
     // REGISTRATION (User Story 1)
@@ -163,6 +172,10 @@ public class UserService {
         Role employeeRole = roleRepository.findByName(request.getRole())
                 .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION));
 
+        // Kiểm tra Cinema tồn tại
+        Cinema cinema = cinemaRepository.findById(request.getCinemaId())
+                .orElseThrow(() -> new AppException(ErrorCode.CINEMA_NOT_FOUND));
+
         // Tạo entity User từ request
         User employee = new User();
         employee.setEmail(request.getEmail().trim());
@@ -184,7 +197,15 @@ public class UserService {
                 .build();
         employee.getUserRoles().add(userRole);
 
-        // Lưu vào database
+        // Tạo và liên kết Staff entity
+        Staff staff = Staff.builder()
+                .user(employee)
+                .cinema(cinema)
+                .salary(request.getSalary())
+                .build();
+        employee.setStaff(staff);
+
+        // Lưu vào database (JPA cascade sẽ lưu cả staff)
         User savedEmployee = userRepository.save(employee);
 
         // Log sự kiện tạo nhân viên
@@ -471,6 +492,10 @@ public class UserService {
         User employee = userRepository.findById(employeeId)
                 .orElseThrow(() -> new AppException(ErrorCode.EMPLOYEE_NOT_FOUND));
 
+        // Kiểm tra Cinema tồn tại
+        Cinema cinema = cinemaRepository.findById(request.getCinemaId())
+                .orElseThrow(() -> new AppException(ErrorCode.CINEMA_NOT_FOUND));
+
         Set<String> roles = employee.getUserRoles().stream()
                 .map(ur -> ur.getRole().getName())
                 .collect(Collectors.toSet());
@@ -542,6 +567,16 @@ public class UserService {
             employee.getUserRoles().add(userRole);
         }
 
+        // Cập nhật/Tạo liên kết Staff
+        Staff staff = employee.getStaff();
+        if (staff == null) {
+            staff = new Staff();
+            staff.setUser(employee);
+            employee.setStaff(staff);
+        }
+        staff.setCinema(cinema);
+        staff.setSalary(request.getSalary());
+
         User savedEmployee = userRepository.save(employee);
 
         log.info("UPDATE_EMPLOYEE_EVENT | account={} | email={} | role={} | status=SUCCESS | timestamp={}",
@@ -600,6 +635,18 @@ public class UserService {
                 .map(ur -> ur.getRole().getName())
                 .collect(Collectors.toSet());
 
+        java.math.BigDecimal salary = null;
+        java.util.UUID cinemaId = null;
+        String cinemaName = null;
+
+        if (user.getStaff() != null) {
+            salary = user.getStaff().getSalary();
+            if (user.getStaff().getCinema() != null) {
+                cinemaId = user.getStaff().getCinema().getId();
+                cinemaName = user.getStaff().getCinema().getName();
+            }
+        }
+
         return UserResponse.builder()
                 .uuid(user.getUuid())
                 .email(user.getEmail())
@@ -616,6 +663,9 @@ public class UserService {
                 .roles(roles)
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
+                .salary(salary)
+                .cinemaId(cinemaId)
+                .cinemaName(cinemaName)
                 .build();
     }
 }

@@ -62,4 +62,11 @@ public class UpdateEmployeeRequest {
     /** Trạng thái tài khoản: ACTIVE hoặc LOCKED */
     @NotBlank(message = "STATUS_REQUIRED")
     private String status;
+
+    @NotNull(message = "SALARY_REQUIRED")
+    @DecimalMin(value = "0.0", inclusive = false, message = "Salary must be greater than 0")
+    private java.math.BigDecimal salary;
+
+    @NotNull(message = "CINEMA_REQUIRED")
+    private java.util.UUID cinemaId;
 }

@@ -482,7 +482,30 @@ public class UserService {
      * @return PageResponse chứa danh sách nhân viên
      */
     public PageResponse<UserResponse> searchEmployees(String search, String role, Pageable pageable) {
-        Page<User> employeePage = userRepository.findEmployeesWithFilters(search, role, pageable);
+        // Map Pageable sort properties to native DB columns to prevent native query sort errors
+        java.util.List<org.springframework.data.domain.Sort.Order> mappedOrders = new java.util.ArrayList<>();
+        for (org.springframework.data.domain.Sort.Order order : pageable.getSort()) {
+            String property = order.getProperty();
+            String column = switch (property) {
+                case "createdAt" -> "created_at";
+                case "updatedAt" -> "updated_at";
+                case "fullName" -> "full_name";
+                case "phoneNumber" -> "phone_number";
+                case "identityCard" -> "identity_card";
+                case "dayOfBirth" -> "day_of_birth";
+                case "username" -> "username";
+                case "email" -> "email";
+                default -> property;
+            };
+            mappedOrders.add(new org.springframework.data.domain.Sort.Order(order.getDirection(), column));
+        }
+        Pageable mappedPageable = org.springframework.data.domain.PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                org.springframework.data.domain.Sort.by(mappedOrders)
+        );
+
+        Page<User> employeePage = userRepository.findEmployeesWithFilters(search, role, mappedPageable);
 
         List<UserResponse> employees = employeePage.getContent().stream()
                 .map(this::toUserResponse)

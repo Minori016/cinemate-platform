@@ -7,22 +7,22 @@ import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
-import java.math.BigDecimal;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShowtimeResponse {
-    private UUID id;
+public class ShowtimePreviewResponse {
+    private UUID tempId;
     private UUID movieId;
     private String movieTitle;
     private UUID roomId;
     private String roomName;
     private OffsetDateTime startTime;
     private OffsetDateTime endTime;
+    private double priorityScore;
     private String format;
     private String language;
-    private BigDecimal basePrice;
-    private String status;
+    private boolean isGoldenHour;
+    private java.math.BigDecimal basePrice;
 }

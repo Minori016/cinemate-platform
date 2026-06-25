@@ -40,6 +40,12 @@ public class Showtime {
     @Column(name = "end_time", nullable = false)
     private OffsetDateTime endTime;
 
+    @Column(name = "format", length = 50)
+    private String format;
+
+    @Column(name = "language", length = 50)
+    private String language;
+
     @Column(name = "status", length = 50)
     @Builder.Default
     private String status = "SCHEDULED";
@@ -51,4 +57,10 @@ public class Showtime {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "showtime", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @Builder.Default
+    private java.util.List<ShowtimePrice> prices = new java.util.ArrayList<>();
 }

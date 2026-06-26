@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -64,22 +66,25 @@ public class GlobalExceptionHandler {
                 .body(apiResponse);
     }
 
-    @ExceptionHandler(value = MethodArgumentNotValidException.class)
-    ResponseEntity<ApiResponse<Object>> handlingValidation(MethodArgumentNotValidException exception) {
-        String enumKey = exception.getFieldError().getDefaultMessage();
-
-        ErrorCode errorCode = ErrorCode.INVALID_KEY;
-
-        try {
-            errorCode = ErrorCode.valueOf(enumKey);
-        } catch (IllegalArgumentException e) {
-
-        }
-
+    @ExceptionHandler(value = {HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
+    ResponseEntity<ApiResponse<Object>> handlingFormatAndParse(Exception exception) {
+        log.error("Format/Parse Exception caught: ", exception);
         ApiResponse<Object> apiResponse = new ApiResponse<>();
 
-        apiResponse.setCode(errorCode.getCode());
-        apiResponse.setMessage(errorCode.getMessage());
+        apiResponse.setCode(400);
+        apiResponse.setMessage("Dữ liệu gửi lên không đúng định dạng. (Ví dụ: sai định dạng UUID, ngày giờ).");
+
+        return ResponseEntity.badRequest().body(apiResponse);
+    }
+
+    @ExceptionHandler(value = MethodArgumentNotValidException.class)
+    ResponseEntity<ApiResponse<Object>> handlingValidation(MethodArgumentNotValidException exception) {
+        String errorMessage = exception.getFieldError().getDefaultMessage();
+        
+        ApiResponse<Object> apiResponse = new ApiResponse<>();
+
+        apiResponse.setCode(1001); // INVALID_KEY code as generic validation code
+        apiResponse.setMessage(errorMessage);
 
         return ResponseEntity.badRequest().body(apiResponse);
     }

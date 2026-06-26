@@ -31,4 +31,9 @@ public class UserResponse {
     private Set<String> roles;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    private java.math.BigDecimal salary;
+    private java.util.UUID cinemaId;
+    private String cinemaName;
+    private Boolean isFirstLogin;
 }

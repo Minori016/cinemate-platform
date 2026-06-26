@@ -1,6 +1,7 @@
 package com.cinema.cinemate.controller.admin;
 
 import com.cinema.cinemate.request.AddEmployeeRequest;
+import com.cinema.cinemate.request.UpdateEmployeeRequest;
 import com.cinema.cinemate.response.ApiResponse;
 import com.cinema.cinemate.response.PageResponse;
 import com.cinema.cinemate.response.UserResponse;
@@ -62,6 +63,18 @@ public class AdminEmployeeController {
     public ApiResponse<UserResponse> getEmployee(@PathVariable UUID employeeId) {
         return ApiResponse.<UserResponse>builder()
                 .result(userService.getUserById(employeeId))
+                .build();
+    }
+
+    @PutMapping("/{employeeId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ApiResponse<UserResponse> updateEmployee(
+            @PathVariable UUID employeeId,
+            @RequestBody @Valid UpdateEmployeeRequest request) {
+        UserResponse updatedEmployee = userService.updateEmployee(employeeId, request);
+        return ApiResponse.<UserResponse>builder()
+                .message("Employee has been updated successfully.")
+                .result(updatedEmployee)
                 .build();
     }
 

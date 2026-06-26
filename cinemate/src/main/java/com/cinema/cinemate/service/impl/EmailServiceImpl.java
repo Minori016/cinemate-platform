@@ -84,4 +84,76 @@ public class EmailServiceImpl implements EmailService {
             throw new RuntimeException("Failed to send email", e);
         }
     }
+
+    @Override
+    public void sendEmployeeAccountCreationEmail(String toEmail, String username, String tempPassword) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            helper.setTo(toEmail);
+            helper.setSubject("Cinemate - Chào mừng nhân viên mới");
+            
+            String loginLink = "http://localhost:5173/login"; // TODO: Có thể đổi URL đăng nhập admin nếu cần
+            
+            String htmlBody = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+                    .container { max-width: 600px; margin: 20px auto; background-color: #000000; color: #ffffff; padding: 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+                    .header { background-color: #E50914; padding: 40px 20px; text-align: center; }
+                    .header h1 { margin: 0; font-size: 32px; color: #ffffff; font-weight: 900; letter-spacing: 2px;}
+                    .header p { margin: 10px 0 0 0; font-size: 18px; color: #ffdcdc; }
+                    .content { padding: 30px; background-color: #141414; }
+                    .content p { font-size: 16px; line-height: 1.6; color: #e5e5e5; }
+                    .info-box { background-color: #2b2b2b; padding: 15px; margin: 20px 0; border-radius: 4px; border-left: 4px solid #E50914; }
+                    .info-box p { margin: 5px 0; font-size: 16px; color: #ffffff; }
+                    .btn-container { text-align: center; margin: 35px 0; }
+                    .btn { display: inline-block; padding: 15px 35px; background-color: #E50914; color: #ffffff !important; text-decoration: none; font-size: 16px; font-weight: bold; border-radius: 4px; }
+                    .warning-box { margin-top: 20px; }
+                    .warning-box p { font-size: 14px; color: #cccccc; font-style: italic; }
+                    .footer { text-align: center; padding: 20px; font-size: 12px; color: #888888; background-color: #000000; border-top: 1px solid #333333; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>C I N E M A T E</h1>
+                        <p>Thông tin tài khoản nội bộ</p>
+                    </div>
+                    <div class="content">
+                        <p>Xin chào,</p>
+                        <p>Chào mừng bạn gia nhập đội ngũ <strong>Cinemate</strong>. Tài khoản của bạn đã được quản trị viên tạo thành công. Dưới đây là thông tin đăng nhập của bạn:</p>
+                        
+                        <div class="info-box">
+                            <p><strong>Tên đăng nhập:</strong> %s</p>
+                            <p><strong>Mật khẩu:</strong> %s</p>
+                        </div>
+                        
+                        <div class="btn-container">
+                            <a href="%s" class="btn">Đăng nhập ngay</a>
+                        </div>
+                        
+                        <div class="warning-box">
+                            <p>Lưu ý: Vì lý do bảo mật, hệ thống sẽ yêu cầu bạn <strong>đổi mật khẩu mới</strong> trong lần đăng nhập đầu tiên.</p>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <p>© 2026 Cinemate Team. Email này được gửi tự động, vui lòng không trả lời.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(username, tempPassword, loginLink);
+            
+            helper.setText(htmlBody, true);
+            mailSender.send(message);
+            log.info("Account creation email sent to: {}", toEmail);
+        } catch (Exception e) {
+            log.error("Failed to send account creation email to {}", toEmail, e);
+            throw new RuntimeException("Failed to send email", e);
+        }
+    }
 }

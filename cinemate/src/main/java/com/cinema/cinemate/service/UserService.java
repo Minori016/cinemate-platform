@@ -8,6 +8,13 @@ import com.cinema.cinemate.entity.Role;
 import com.cinema.cinemate.entity.UserRole;
 import com.cinema.cinemate.repository.UserRepository;
 import com.cinema.cinemate.repository.RoleRepository;
+import com.cinema.cinemate.repository.CinemaRepository;
+import com.cinema.cinemate.repository.StaffRepository;
+import com.cinema.cinemate.entity.User;
+import com.cinema.cinemate.entity.Role;
+import com.cinema.cinemate.entity.UserRole;
+import com.cinema.cinemate.entity.Cinema;
+import com.cinema.cinemate.entity.Staff;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,6 +25,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.cinema.cinemate.request.ChangePasswordRequest;
 import com.cinema.cinemate.request.ProfileUpdateRequest;
 import com.cinema.cinemate.request.AddEmployeeRequest;
+import com.cinema.cinemate.request.UpdateEmployeeRequest;
 import com.cinema.cinemate.response.PageResponse;
 import com.cinema.cinemate.service.AuthenticationService;
 import com.cinema.cinemate.service.CloudinaryService;
@@ -48,6 +56,8 @@ public class UserService {
     private final EmailService emailService;
     private final AuthenticationService authenticationService;
     private final CloudinaryService cloudinaryService;
+    private final CinemaRepository cinemaRepository;
+    private final StaffRepository staffRepository;
 
     // ========================
     // REGISTRATION (User Story 1)
@@ -162,6 +172,10 @@ public class UserService {
         Role employeeRole = roleRepository.findByName(request.getRole())
                 .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION));
 
+        // Kiểm tra Cinema tồn tại
+        Cinema cinema = cinemaRepository.findById(request.getCinemaId())
+                .orElseThrow(() -> new AppException(ErrorCode.CINEMA_NOT_FOUND));
+
         // Tạo entity User từ request
         User employee = new User();
         employee.setEmail(request.getEmail().trim());
@@ -183,8 +197,30 @@ public class UserService {
                 .build();
         employee.getUserRoles().add(userRole);
 
-        // Lưu vào database
+        // Tạo và liên kết Staff entity
+        boolean isStaffRole = "STAFF".equalsIgnoreCase(request.getRole().trim());
+        Staff staff = Staff.builder()
+                .user(employee)
+                .cinema(cinema)
+                .salary(request.getSalary())
+                .isFirstLogin(isStaffRole)
+                .build();
+        employee.setStaff(staff);
+
+        // Lưu vào database (JPA cascade sẽ lưu cả staff)
         User savedEmployee = userRepository.save(employee);
+
+        // Gửi email thông báo tài khoản
+        try {
+            emailService.sendEmployeeAccountCreationEmail(
+                savedEmployee.getEmail(), 
+                savedEmployee.getUsername(), 
+                request.getPassword()
+            );
+        } catch (Exception e) {
+            log.error("Error sending account creation email to {}", savedEmployee.getEmail(), e);
+            // Non-blocking: we still allow the employee to be created even if email fails
+        }
 
         // Log sự kiện tạo nhân viên
         log.info("ADD_EMPLOYEE_EVENT | account={} | email={} | role={} | status=SUCCESS | timestamp={}",
@@ -261,6 +297,13 @@ public class UserService {
 
         // Change password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        if (user.getStaff() != null) {
+            boolean isStaff = user.getUserRoles().stream()
+                    .anyMatch(ur -> "STAFF".equals(ur.getRole().getName()));
+            if (isStaff) {
+                user.getStaff().setIsFirstLogin(false);
+            }
+        }
         userRepository.save(user);
 
         log.info("CHANGE_PASSWORD | email={} | timestamp={}", user.getEmail(), java.time.LocalDateTime.now());
@@ -272,6 +315,7 @@ public class UserService {
     public UserResponse updateProfile(UUID targetUserId, ProfileUpdateRequest request, UUID actorId, Set<String> actorRoles) {
         User targetUser = userRepository.findById(targetUserId)
                 .orElseThrow(() -> {
+            
                     logEditEvent(actorId, actorRoles, targetUserId, java.util.Collections.emptySet(), "FAILED");
                     return new AppException(ErrorCode.USER_NOT_EXISTED);
                 });
@@ -330,7 +374,8 @@ public class UserService {
         }
     }
 
-    private void logEditEvent(UUID actorId, Set<String> actorRoles, UUID targetId, Set<String> targetRoles, String status) {
+    private void logEditEvent(UUID actorId, Set<String> actorRoles, UUID targetId, Set<String> targetRoles,
+            String status) {
         UUID employeeId = null;
         UUID memberId = null;
 
@@ -437,7 +482,30 @@ public class UserService {
      * @return PageResponse chứa danh sách nhân viên
      */
     public PageResponse<UserResponse> searchEmployees(String search, String role, Pageable pageable) {
-        Page<User> employeePage = userRepository.findEmployeesWithFilters(search, role, pageable);
+        // Map Pageable sort properties to native DB columns to prevent native query sort errors
+        java.util.List<org.springframework.data.domain.Sort.Order> mappedOrders = new java.util.ArrayList<>();
+        for (org.springframework.data.domain.Sort.Order order : pageable.getSort()) {
+            String property = order.getProperty();
+            String column = switch (property) {
+                case "createdAt" -> "created_at";
+                case "updatedAt" -> "updated_at";
+                case "fullName" -> "full_name";
+                case "phoneNumber" -> "phone_number";
+                case "identityCard" -> "identity_card";
+                case "dayOfBirth" -> "day_of_birth";
+                case "username" -> "username";
+                case "email" -> "email";
+                default -> property;
+            };
+            mappedOrders.add(new org.springframework.data.domain.Sort.Order(order.getDirection(), column));
+        }
+        Pageable mappedPageable = org.springframework.data.domain.PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                org.springframework.data.domain.Sort.by(mappedOrders)
+        );
+
+        Page<User> employeePage = userRepository.findEmployeesWithFilters(search, role, mappedPageable);
 
         List<UserResponse> employees = employeePage.getContent().stream()
                 .map(this::toUserResponse)
@@ -459,6 +527,113 @@ public class UserService {
      * @param employeeId UUID của nhân viên cần xóa
      * @throws AppException nếu nhân viên không tồn tại
      */
+    /**
+     * Cập nhật thông tin nhân viên (Admin/Manager).
+     *
+     * @param employeeId UUID của nhân viên cần cập nhật
+     * @param request DTO chứa thông tin cập nhật
+     * @return UserResponse chứa thông tin nhân viên sau khi cập nhật
+     */
+    public UserResponse updateEmployee(UUID employeeId, UpdateEmployeeRequest request) {
+        User employee = userRepository.findById(employeeId)
+                .orElseThrow(() -> new AppException(ErrorCode.EMPLOYEE_NOT_FOUND));
+
+        // Kiểm tra Cinema tồn tại
+        Cinema cinema = cinemaRepository.findById(request.getCinemaId())
+                .orElseThrow(() -> new AppException(ErrorCode.CINEMA_NOT_FOUND));
+
+        Set<String> roles = employee.getUserRoles().stream()
+                .map(ur -> ur.getRole().getName())
+                .collect(Collectors.toSet());
+
+        // Chỉ cho phép cập nhật nếu account đích có role STAFF hoặc MANAGER
+        if (!roles.contains("STAFF") && !roles.contains("MANAGER")) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        // Kiểm tra email duy nhất (nếu thay đổi email)
+        if (!employee.getEmail().equalsIgnoreCase(request.getEmail().trim())) {
+            if (userRepository.existsByEmail(request.getEmail().trim())) {
+                throw new AppException(ErrorCode.USER_EXISTED);
+            }
+        }
+
+        // Cập nhật password mới (nếu có cung cấp)
+        if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
+            if (!request.getPassword().equals(request.getConfirmPassword())) {
+                throw new AppException(ErrorCode.PASSWORD_MISMATCH);
+            }
+            String regex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$";
+            if (request.getPassword().length() < 8) {
+                throw new AppException(ErrorCode.INVALID_PASSWORD);
+            }
+            if (!request.getPassword().matches(regex)) {
+                throw new AppException(ErrorCode.WEAK_PASSWORD);
+            }
+            employee.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
+        // Cập nhật hình ảnh (nếu có cung cấp)
+        if (request.getImage() != null) {
+            employee.setImage(request.getImage().trim());
+        }
+
+        // Cập nhật thông tin cá nhân cơ bản
+        employee.setEmail(request.getEmail().trim());
+        employee.setFullName(request.getFullName().trim());
+        employee.setDayOfBirth(request.getDayOfBirth());
+        employee.setGender(request.getGender().trim());
+        employee.setIdentityCard(request.getIdentityCard().trim());
+        employee.setPhoneNumber(request.getPhoneNumber().trim());
+        employee.setAddress(request.getAddress().trim());
+        employee.setStatus(request.getStatus().trim());
+
+        // Cập nhật role (STAFF hoặc MANAGER)
+        if (!"STAFF".equals(request.getRole()) && !"MANAGER".equals(request.getRole())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        UserRole currentEmployeeRole = employee.getUserRoles().stream()
+                .filter(ur -> "STAFF".equals(ur.getRole().getName()) || "MANAGER".equals(ur.getRole().getName()))
+                .findFirst()
+                .orElse(null);
+
+        Role newRole = roleRepository.findByName(request.getRole())
+                .orElseThrow(() -> new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION));
+
+        if (currentEmployeeRole != null) {
+            if (!currentEmployeeRole.getRole().getName().equals(request.getRole())) {
+                currentEmployeeRole.setRole(newRole);
+            }
+        } else {
+            UserRole userRole = UserRole.builder()
+                    .user(employee)
+                    .role(newRole)
+                    .build();
+            employee.getUserRoles().add(userRole);
+        }
+
+        // Cập nhật/Tạo liên kết Staff
+        Staff staff = employee.getStaff();
+        if (staff == null) {
+            staff = new Staff();
+            staff.setUser(employee);
+            employee.setStaff(staff);
+        }
+        staff.setCinema(cinema);
+        staff.setSalary(request.getSalary());
+
+        User savedEmployee = userRepository.save(employee);
+
+        log.info("UPDATE_EMPLOYEE_EVENT | account={} | email={} | role={} | status=SUCCESS | timestamp={}",
+                savedEmployee.getUsername(),
+                savedEmployee.getEmail(),
+                request.getRole(),
+                java.time.LocalDateTime.now());
+
+        return toUserResponse(savedEmployee);
+    }
+
     public void deleteEmployee(UUID employeeId) {
         User employee = userRepository.findById(employeeId)
                 .orElseThrow(() -> new AppException(ErrorCode.EMPLOYEE_NOT_FOUND));
@@ -511,6 +686,22 @@ public class UserService {
                 .map(ur -> ur.getRole().getName())
                 .collect(Collectors.toSet());
 
+        java.math.BigDecimal salary = null;
+        java.util.UUID cinemaId = null;
+        String cinemaName = null;
+        Boolean isFirstLogin = null;
+
+        if (user.getStaff() != null) {
+            salary = user.getStaff().getSalary();
+            if (roles.contains("STAFF")) {
+                isFirstLogin = user.getStaff().getIsFirstLogin();
+            }
+            if (user.getStaff().getCinema() != null) {
+                cinemaId = user.getStaff().getCinema().getId();
+                cinemaName = user.getStaff().getCinema().getName();
+            }
+        }
+
         return UserResponse.builder()
                 .uuid(user.getUuid())
                 .email(user.getEmail())
@@ -527,6 +718,10 @@ public class UserService {
                 .roles(roles)
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
+                .salary(salary)
+                .cinemaId(cinemaId)
+                .cinemaName(cinemaName)
+                .isFirstLogin(isFirstLogin)
                 .build();
     }
 }

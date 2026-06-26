@@ -35,10 +35,20 @@ public class CinemaRoomService {
         CinemaRoom room = cinemaRoomRepository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("Cinema room not found"));
 
+        // Calculate real physical capacity (COUPLE counts as 2)
+        int totalCapacity = 0;
+        for (SeatRequest sr : request.getSeats()) {
+            if ("COUPLE".equalsIgnoreCase(sr.getType())) {
+                totalCapacity += 2;
+            } else {
+                totalCapacity += 1;
+            }
+        }
+
         // Update room capacity & grid size
         room.setRowCount(request.getRows());
         room.setColumnCount(request.getCols());
-        room.setCapacity(request.getSeats().size());
+        room.setCapacity(totalCapacity);
         cinemaRoomRepository.save(room);
 
         // Wipe existing seats
@@ -47,7 +57,12 @@ public class CinemaRoomService {
 
         // Insert new seats
         List<Seat> newSeats = new ArrayList<>();
+        java.util.Set<String> seenSeats = new java.util.HashSet<>();
         for (SeatRequest sr : request.getSeats()) {
+            String seatKey = sr.getRow() + "-" + sr.getNumber();
+            if (!seenSeats.add(seatKey)) {
+                continue; // Skip duplicate seats
+            }
             SeatType type;
             try {
                 type = SeatType.valueOf(sr.getType().toUpperCase());
@@ -143,6 +158,7 @@ public class CinemaRoomService {
         if (!cinemaRoomRepository.existsById(id)) {
             throw new RuntimeException("Cinema room not found");
         }
+        seatRepository.deleteByRoomId(id);
         cinemaRoomRepository.deleteById(id);
     }
 

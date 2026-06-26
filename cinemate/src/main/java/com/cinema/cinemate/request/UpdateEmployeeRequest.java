@@ -2,56 +2,25 @@ package com.cinema.cinemate.request;
 
 import jakarta.validation.constraints.*;
 import lombok.*;
-import org.hibernate.validator.constraints.UniqueElements;
 import java.time.LocalDate;
 
 /**
- * DTO nhận dữ liệu tạo nhân viên từ Admin/Manager.
- *
- * Bao gồm tất cả field theo AC-01:
- * - Image (upload file)
- * - Account (username)
- * - Password & Confirm Password
- * - Date of Birth
- * - Sex (gender)
- * - Employee Name (fullName)
- * - Identity Card
- * - Email
- * - Phone Number
- * - Address
- *
- * Validate tất cả field bắt buộc theo AC-02.
+ * DTO nhận dữ liệu cập nhật thông tin nhân viên từ Admin/Manager.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AddEmployeeRequest {
+public class UpdateEmployeeRequest {
 
-    // --- Hình ảnh ---
+    /** URL hình ảnh nhân viên (tùy chọn) */
+    private String image;
 
-    /** File hình ảnh nhân viên */
-    private byte[] image;
-
-    // --- Thông tin tài khoản ---
-
-    /** Tên tài khoản (Account) - phải unique (AC-02) */
-    @NotBlank(message = "USERNAME_REQUIRED")
-    @Size(min = 3, max = 28, message = "Account name must be between 3 and 28 characters")
-    private String username;
-
-    /** Mật khẩu */
-    @NotBlank(message = "PASSWORD_REQUIRED")
-    @Size(min = 8, max = 28, message = "Password must be between 8 and 28 characters")
-    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
-            message = "WEAK_PASSWORD")
+    /** Mật khẩu mới (Tùy chọn) */
     private String password;
 
-    /** Xác nhận mật khẩu - phải khớp với Password (AC-02) */
-    @NotBlank(message = "CONFIRM_PASSWORD_REQUIRED")
+    /** Xác nhận mật khẩu mới (Tùy chọn) */
     private String confirmPassword;
-
-    // --- Thông tin cá nhân ---
 
     /** Ngày sinh */
     @NotNull(message = "BIRTHDAY_REQUIRED")
@@ -86,14 +55,13 @@ public class AddEmployeeRequest {
     @Size(max = 28, message = "Address must not exceed 28 characters")
     private String address;
 
-    // --- Phân quyền ---
-
-    /**
-     * Vai trò của nhân viên: STAFF hoặc MANAGER.
-     * AC-06: Chỉ Admin/Manager mới được tạo employee.
-     */
+    /** Vai trò của nhân viên: STAFF hoặc MANAGER */
     @NotBlank(message = "ROLE_REQUIRED")
     private String role;
+
+    /** Trạng thái tài khoản: ACTIVE hoặc LOCKED */
+    @NotBlank(message = "STATUS_REQUIRED")
+    private String status;
 
     @NotNull(message = "SALARY_REQUIRED")
     @DecimalMin(value = "0.0", inclusive = false, message = "Salary must be greater than 0")

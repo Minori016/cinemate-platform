@@ -83,7 +83,7 @@ public class AdminEmployeeController {
     public ApiResponse<String> deleteEmployee(@PathVariable UUID employeeId) {
         userService.deleteEmployee(employeeId);
         return ApiResponse.<String>builder()
-                .message("Employee has been deleted successfully.")
+                .message("Employee has been deactivated successfully.")
                 .build();
     }
 }

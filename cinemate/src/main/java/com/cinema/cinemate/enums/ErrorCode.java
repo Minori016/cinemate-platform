@@ -83,6 +83,7 @@ public enum ErrorCode {
     // === Lỗi Employee ===
     USERNAME_EXISTED(3001, "The inputted account is already existed, please choose another account name", HttpStatus.BAD_REQUEST),
     EMPLOYEE_NOT_FOUND(3002, "Employee not found", HttpStatus.NOT_FOUND),
+    EMPLOYEE_ALREADY_INACTIVE(3004, "Employee is already inactive", HttpStatus.BAD_REQUEST),
     CINEMA_NOT_FOUND(3003, "Cinema not found", HttpStatus.NOT_FOUND),
     ;
 

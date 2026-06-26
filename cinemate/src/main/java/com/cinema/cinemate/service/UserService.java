@@ -646,9 +646,14 @@ public class UserService {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
-        userRepository.delete(employee);
+        if ("INACTIVE".equalsIgnoreCase(employee.getStatus())) {
+            throw new AppException(ErrorCode.EMPLOYEE_ALREADY_INACTIVE);
+        }
 
-        log.info("DELETE_EMPLOYEE_EVENT | employeeId={} | roles={} | status=SUCCESS | timestamp={}",
+        employee.setStatus("INACTIVE");
+        User savedEmployee = userRepository.save(employee);
+
+        log.info("SOFT_DELETE_EMPLOYEE_EVENT | employeeId={} | roles={} | newStatus=INACTIVE | status=SUCCESS | timestamp={}",
                 employeeId, roles, java.time.LocalDateTime.now());
     }
 

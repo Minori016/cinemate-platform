@@ -80,6 +80,13 @@ public enum ErrorCode {
     INVALID_MOVIE_DURATION(2012, "Movie duration must be greater than 0", HttpStatus.BAD_REQUEST),
     ACTOR_NOT_FOUND(2013, "One or more actors not found", HttpStatus.NOT_FOUND),
 
+    // === Lỗi Showtime ===
+    SHOWTIME_IN_PAST(2014, "Cannot create showtime in the past", HttpStatus.BAD_REQUEST),
+    SHOWTIME_INVALID_DATE_RANGE(2015, "Start date must be before or equal to end date", HttpStatus.BAD_REQUEST),
+    SHOWTIME_INVALID_FORMAT(2016, "Invalid showtime format", HttpStatus.BAD_REQUEST),
+    SHOWTIME_INVALID_PRICE(2017, "Showtime price must be positive", HttpStatus.BAD_REQUEST),
+    SHOWTIME_INVALID_LANGUAGE(2018, "Invalid showtime language", HttpStatus.BAD_REQUEST),
+
     // === Lỗi Employee ===
     USERNAME_EXISTED(3001, "The inputted account is already existed, please choose another account name", HttpStatus.BAD_REQUEST),
     EMPLOYEE_NOT_FOUND(3002, "Employee not found", HttpStatus.NOT_FOUND),

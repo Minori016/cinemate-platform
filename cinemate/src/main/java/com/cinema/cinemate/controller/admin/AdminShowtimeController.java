@@ -8,10 +8,7 @@ import com.cinema.cinemate.repository.ShowtimeRepository;
 import com.cinema.cinemate.request.ManualShowtimeCreateRequest;
 import com.cinema.cinemate.response.ShowtimeValidationResponse;
 import com.cinema.cinemate.service.ShowtimeValidationService;
-import com.cinema.cinemate.request.AutoGenerateRequest;
-import com.cinema.cinemate.response.ShowtimePreviewResponse;
 import com.cinema.cinemate.response.ShowtimeResponse;
-import com.cinema.cinemate.service.ShowtimeAutoGenerateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +22,6 @@ import java.util.List;
 public class AdminShowtimeController {
 
     private final ShowtimeValidationService validationService;
-    private final ShowtimeAutoGenerateService autoGenerateService;
     private final com.cinema.cinemate.service.ShowtimeService showtimeService;
     private final ShowtimeRepository showtimeRepository;
     private final MovieRepository movieRepository;
@@ -64,38 +60,5 @@ public class AdminShowtimeController {
         Showtime showtime = showtimeService.createShowtime(request);
         
         return ResponseEntity.ok(showtime);
-    }
-
-    @PostMapping("/auto-generate")
-    public ResponseEntity<List<ShowtimePreviewResponse>> autoGenerateShowtimes(
-            @Valid @RequestBody AutoGenerateRequest request) {
-        List<ShowtimePreviewResponse> previewList = autoGenerateService.generate(request);
-        return ResponseEntity.ok(previewList);
-    }
-
-    @PostMapping("/batch")
-    public ResponseEntity<?> createBatchShowtimes(
-            @RequestBody List<ShowtimePreviewResponse> requestList) {
-        
-        List<Showtime> toSave = new java.util.ArrayList<>();
-        for (ShowtimePreviewResponse req : requestList) {
-            ManualShowtimeCreateRequest manualReq = ManualShowtimeCreateRequest.builder()
-                .movieId(req.getMovieId())
-                .roomId(req.getRoomId())
-                .startTime(req.getStartTime())
-                .format(req.getFormat())
-                .language(req.getLanguage())
-                .basePrice(req.getBasePrice())
-                .build();
-            
-            try {
-                Showtime showtime = showtimeService.createShowtime(manualReq);
-                toSave.add(showtime);
-            } catch (Exception e) {
-                // Skip if movie or room not found
-            }
-        }
-        
-        return ResponseEntity.ok(toSave);
     }
 }

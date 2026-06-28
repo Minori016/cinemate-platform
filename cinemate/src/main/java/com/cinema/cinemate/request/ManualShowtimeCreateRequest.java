@@ -22,6 +22,7 @@ public class ManualShowtimeCreateRequest {
     private UUID roomId;
     
     @NotNull(message = "Start time is required")
+    @jakarta.validation.constraints.Future(message = "Thời gian bắt đầu phải ở tương lai, không thể tạo suất chiếu trong quá khứ")
     private OffsetDateTime startTime;
     
     @jakarta.validation.constraints.NotBlank(message = "Format is required")

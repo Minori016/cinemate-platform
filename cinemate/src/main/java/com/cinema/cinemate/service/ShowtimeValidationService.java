@@ -12,8 +12,12 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Arrays;
+import com.cinema.cinemate.enums.ShowtimeFormat;
+import com.cinema.cinemate.enums.ShowtimeLanguage;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +32,32 @@ public class ShowtimeValidationService {
     public ShowtimeValidationResponse validateManualCreation(ManualShowtimeCreateRequest req) {
         List<String> hardErrors = new ArrayList<>();
         List<String> softWarnings = new ArrayList<>();
+
+        // ===== Check thời gian trong quá khứ =====
+        OffsetDateTime now = OffsetDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+        if (req.getStartTime().isBefore(now)) {
+            hardErrors.add("Không thể tạo suất chiếu trong quá khứ. Thời gian bắt đầu phải sau thời điểm hiện tại (" + 
+                now.toLocalDateTime().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) + 
+                " - Giờ Việt Nam).");
+        }
+
+        // ===== Validate format bằng enum =====
+        if (req.getFormat() != null) {
+            ShowtimeFormat format = ShowtimeFormat.fromString(req.getFormat());
+            if (format == null) {
+                hardErrors.add("Định dạng chiếu '" + req.getFormat() + "' không hợp lệ. " +
+                    "Chấp nhận: 2D, 3D, IMAX, 4DX");
+            }
+        }
+
+        // ===== Validate language bằng enum =====
+        if (req.getLanguage() != null) {
+            ShowtimeLanguage language = ShowtimeLanguage.fromString(req.getLanguage());
+            if (language == null) {
+                hardErrors.add("Ngôn ngữ chiếu '" + req.getLanguage() + "' không hợp lệ. " +
+                    "Chấp nhận: Phụ đề, Lồng tiếng, Subtitled, Dubbed");
+            }
+        }
 
         Movie movie = movieRepository.findById(req.getMovieId()).orElse(null);
         CinemaRoom room = cinemaRoomRepository.findById(req.getRoomId()).orElse(null);

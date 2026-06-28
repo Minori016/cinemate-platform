@@ -1,6 +1,8 @@
 package com.cinema.cinemate.response;
 
 import lombok.*;
+import com.cinema.cinemate.enums.UserStatus;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -27,7 +29,7 @@ public class UserResponse {
     private String address;
     private String image;
     private Integer score;
-    private String status;
+    private UserStatus status;
     private Set<String> roles;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

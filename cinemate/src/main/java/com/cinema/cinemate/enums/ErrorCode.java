@@ -30,6 +30,7 @@ public enum ErrorCode {
     INVALID_TOKEN(1008, "Token is invalid", HttpStatus.UNAUTHORIZED),
     TOKEN_EXPIRED(1009, "Token has expired", HttpStatus.UNAUTHORIZED),
     ACCOUNT_LOCKED(1010, "Account has been locked!", HttpStatus.FORBIDDEN),
+    ACCOUNT_BANNED(1035, "Account has been banned!", HttpStatus.FORBIDDEN),
     TOKEN_CREATION_FAILED(1013, "Failed to create authentication token", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // === Lỗi Validation Input ===

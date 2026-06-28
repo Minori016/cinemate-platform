@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import com.cinema.cinemate.enums.ErrorCode;
 import com.cinema.cinemate.exception.AppException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.cinema.cinemate.enums.UserStatus;
 
 import com.cinema.cinemate.request.ChangePasswordRequest;
 import com.cinema.cinemate.request.ProfileUpdateRequest;
@@ -112,7 +113,7 @@ public class UserService {
         user.setGender(request.getGender().trim());
         user.setPhoneNumber(request.getPhoneNumber().trim());
         user.setScore(0);
-        user.setStatus("ACTIVE");
+        user.setStatus(UserStatus.ACTIVE);
 
         // Gán role MEMBER cho user mới
         UserRole userRole = UserRole.builder()
@@ -188,7 +189,7 @@ public class UserService {
         employee.setPhoneNumber(request.getPhoneNumber().trim());
         employee.setAddress(request.getAddress().trim());
         employee.setScore(0);
-        employee.setStatus("ACTIVE");
+        employee.setStatus(UserStatus.ACTIVE);
 
         // Gán role cho nhân viên mới
         UserRole userRole = UserRole.builder()
@@ -262,8 +263,11 @@ public class UserService {
         }
 
         // AC-03: Kiểm tra tài khoản có bị khóa không
-        if ("LOCKED".equals(user.getStatus())) {
+        if (UserStatus.LOCKED.equals(user.getStatus())) {
             throw new AppException(ErrorCode.ACCOUNT_LOCKED);
+        }
+        if (UserStatus.BANNED.equals(user.getStatus())) {
+            throw new AppException(ErrorCode.ACCOUNT_BANNED);
         }
 
         return user;
@@ -461,12 +465,13 @@ public class UserService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)));
     }
 
-    /** Xóa user theo UUID */
+    /** Xóa user theo UUID (Soft Delete) */
     public void deleteUser(UUID id) {
-        if (!userRepository.existsById(id)) {
-            throw new AppException(ErrorCode.USER_NOT_EXISTED);
-        }
-        userRepository.deleteById(id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        
+        user.setStatus(UserStatus.BANNED);
+        userRepository.save(user);
     }
 
     // ========================
@@ -586,7 +591,7 @@ public class UserService {
         employee.setIdentityCard(request.getIdentityCard().trim());
         employee.setPhoneNumber(request.getPhoneNumber().trim());
         employee.setAddress(request.getAddress().trim());
-        employee.setStatus(request.getStatus().trim());
+        employee.setStatus(request.getStatus());
 
         // Cập nhật role (STAFF hoặc MANAGER)
         if (!"STAFF".equals(request.getRole()) && !"MANAGER".equals(request.getRole())) {
@@ -646,7 +651,8 @@ public class UserService {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
-        userRepository.delete(employee);
+        employee.setStatus(UserStatus.BANNED);
+        userRepository.save(employee);
 
         log.info("DELETE_EMPLOYEE_EVENT | employeeId={} | roles={} | status=SUCCESS | timestamp={}",
                 employeeId, roles, java.time.LocalDateTime.now());

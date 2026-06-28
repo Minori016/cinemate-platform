@@ -12,6 +12,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import com.cinema.cinemate.enums.UserStatus;
 
 @Component
 @RequiredArgsConstructor
@@ -76,7 +77,7 @@ public class DataInitializer implements ApplicationRunner {
                     .password(passwordEncoder.encode("Admin@123456"))
                     .fullName("System Administrator")
                     .username("admin")
-                    .status("ACTIVE")
+                    .status(UserStatus.ACTIVE)
                     .score(0)
                     .build();
 
@@ -99,7 +100,7 @@ public class DataInitializer implements ApplicationRunner {
                     .password(passwordEncoder.encode("Manager@123456"))
                     .fullName("Cinema Manager")
                     .username("manager")
-                    .status("ACTIVE")
+                    .status(UserStatus.ACTIVE)
                     .score(0)
                     .build();
 

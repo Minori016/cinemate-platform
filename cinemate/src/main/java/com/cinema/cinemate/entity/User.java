@@ -5,6 +5,8 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.cinema.cinemate.enums.UserStatus;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -80,8 +82,9 @@ public class User {
      * Trạng thái tài khoản: ACTIVE hoặc LOCKED.
      * Nếu LOCKED, user sẽ không thể đăng nhập (AC-03 Login).
      */
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private String status;
+    private UserStatus status;
 
     // --- Quan hệ với Role ---
 

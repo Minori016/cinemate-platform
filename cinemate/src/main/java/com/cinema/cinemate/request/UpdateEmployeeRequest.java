@@ -1,5 +1,7 @@
 package com.cinema.cinemate.request;
 
+import com.cinema.cinemate.enums.UserStatus;
+
 import jakarta.validation.constraints.*;
 import lombok.*;
 import java.time.LocalDate;
@@ -59,9 +61,9 @@ public class UpdateEmployeeRequest {
     @NotBlank(message = "ROLE_REQUIRED")
     private String role;
 
-    /** Trạng thái tài khoản: ACTIVE hoặc LOCKED */
-    @NotBlank(message = "STATUS_REQUIRED")
-    private String status;
+    /** Trạng thái tài khoản: ACTIVE, LOCKED hoặc BANNED */
+    @NotNull(message = "STATUS_REQUIRED")
+    private UserStatus status;
 
     @NotNull(message = "SALARY_REQUIRED")
     @DecimalMin(value = "0.0", inclusive = false, message = "Salary must be greater than 0")
